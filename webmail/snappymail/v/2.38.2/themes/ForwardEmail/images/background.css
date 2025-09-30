@@ -1,0 +1,18 @@
+/* ForwardEmail custom background - use CSS gradient instead of image */
+body {
+    background: linear-gradient(135deg, #0066ff 0%, #7ac3de 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* Alternative subtle pattern background */
+.background-pattern {
+    background:
+        linear-gradient(135deg, #0066ff 0%, #7ac3de 100%),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            rgba(255,255,255,0.02) 20px,
+            rgba(255,255,255,0.02) 40px
+        ) !important;
+}

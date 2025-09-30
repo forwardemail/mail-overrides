@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  webmail:
+    build:
+      context: ./webmail
+      dockerfile: Dockerfile
+    container_name: snappymail
+    ports:
+      - "8080:80"
+    volumes:
+      - ./webmail:/var/www/html
+    tmpfs:
+      # Mount data directory in memory for privacy (no persistent user data)
+      # Using separate tmpfs mount to avoid permission conflicts
+      - /tmp/snappymail-data:mode=0700,uid=33,gid=33,size=100m
+    environment:
+      - APP_DATA_FOLDER_PATH=/tmp/snappymail-data/
+    extra_hosts:
+      # Enable connection to host services
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
