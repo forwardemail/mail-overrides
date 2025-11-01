@@ -1,4 +1,4 @@
 [submodule "mail"]
 	path = mail
-	url = https://github.com/forwardemail/mail.git
+	url = git@github.com:forwardemail/mail.git
 	branch = master
