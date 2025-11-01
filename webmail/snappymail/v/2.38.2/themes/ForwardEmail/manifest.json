@@ -1,9 +1,0 @@
-{
-  "name": "ForwardEmail",
-  "parent": "NextcloudV25+",
-  "author": "Forward Email LLC",
-  "version": "1.0.0",
-  "license": "BUSL-1.1",
-  "website": "https://forwardemail.net",
-  "description": "Professional ForwardEmail theme based on Nextcloud v25+ styling with ForwardEmail branding and colors"
-}
