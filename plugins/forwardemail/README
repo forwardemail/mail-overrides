@@ -1,0 +1,16 @@
+Forward Email Branding Plugin
+
+This plugin overrides the default SnappyMail login page with Forward Email branding, including:
+- Custom navigation header with links to Forward Email resources
+- Branded hero section with tagline
+- Styled login form matching Forward Email design
+- Quick access links to Forward Email documentation
+
+The plugin works in conjunction with the ForwardEmail theme which provides the CSS styling for the login page.
+
+Installation:
+1. Enable this plugin in the SnappyMail admin panel
+2. Set the ForwardEmail theme as the default theme
+
+Version: 1.0.0
+License: BUSL-1.1

@@ -1,0 +1,32 @@
+version: '3.8'
+
+# Local Development Docker Compose
+# For production deployment, use Ansible from the main forwardemail monorepo
+
+services:
+  snappymail-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: snappymail-local-dev
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount mail directory for hot reload during development
+      - ../mail:/var/www/html
+      # Persist data locally
+      - snappymail-dev-data:/var/www/html/data
+    environment:
+      - PHP_MEMORY_LIMIT=256M
+      - PHP_UPLOAD_MAX_FILESIZE=25M
+      - PHP_POST_MAX_SIZE=25M
+    networks:
+      - snappymail-dev
+
+volumes:
+  snappymail-dev-data:
+    driver: local
+
+networks:
+  snappymail-dev:
+    driver: bridge
