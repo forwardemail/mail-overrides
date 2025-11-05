@@ -6,19 +6,24 @@ FROM php:8.2-apache
 LABEL maintainer="Forward Email LLC"
 LABEL description="Forward Email SnappyMail - Local Development"
 
-# Install PHP extensions required by SnappyMail
+# Install PHP extensions required by SnappyMail and Composer
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libxml2-dev \
     libzip-dev \
     libssl-dev \
     curl \
+    git \
+    unzip \
     && docker-php-ext-install \
     intl \
     opcache \
     pdo_mysql \
     zip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Composer (required for Predis)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache modules
 RUN a2enmod rewrite headers
@@ -48,6 +53,10 @@ RUN { \
 } > /etc/apache2/conf-available/snappymail.conf && \
     a2enconf snappymail
 
+# Copy and setup entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

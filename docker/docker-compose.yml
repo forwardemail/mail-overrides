@@ -12,19 +12,43 @@ services:
     ports:
       - "8080:80"
     volumes:
-      # Mount mail directory for hot reload during development
-      - ../mail:/var/www/html
+      # Mount dist directory (built SnappyMail with overrides)
+      - ../dist:/var/www/html
       # Persist data locally
       - snappymail-dev-data:/var/www/html/data
+      # Expose seeded config from build output (read-only)
+      - ../dist/data:/seed-data:ro
     environment:
       - PHP_MEMORY_LIMIT=256M
       - PHP_UPLOAD_MAX_FILESIZE=25M
       - PHP_POST_MAX_SIZE=25M
+      - REDIS_HOST=redis-dev
+      - REDIS_PORT=6379
     networks:
       - snappymail-dev
+    depends_on:
+      - redis-dev
+
+  redis-dev:
+    image: redis:7-alpine
+    container_name: snappymail-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - snappymail-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   snappymail-dev-data:
+    driver: local
+  redis-dev-data:
     driver: local
 
 networks:

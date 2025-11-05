@@ -1,7 +1,7 @@
-# Build artifacts - customizations synced into mail/ submodule
-mail/snappymail/v/*/plugins/forwardemail
-mail/snappymail/v/*/themes/ForwardEmail
-mail/include.php
+# Build output directory (final SnappyMail with overrides applied)
+dist/
+
+# Keep mail/ submodule clean - no longer syncing into it
 mail/data/
 
 # Environment files

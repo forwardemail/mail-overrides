@@ -46,46 +46,69 @@ cd mail-overrides
 git submodule update --init --recursive
 ```
 
-### 2. Build
+### 2. Build SnappyMail (First Time Only)
+
+Before you can use the overrides, SnappyMail needs to be built once:
+
+```bash
+cd mail
+npm install
+npx gulp
+
+cd ..
+```
+
+This compiles the CSS/JS assets. You only need to do this once (or when updating the mail submodule).
+
+### 3. Build Distribution
 
 ```bash
 # Make scripts executable
 chmod +x scripts/*.sh
 
-# Sync Forward Email customizations into mail/
+# Build: Copy mail/ → dist/ and apply overrides
 ./scripts/build.sh
 ```
 
-### 3. Test Locally
+This creates `dist/` with SnappyMail + Forward Email customizations.
 
-**Option A: PHP Built-in Server**
-```bash
-cd mail
-php -S localhost:8000
-```
+### 4. Test Locally
 
-**Option B: Docker**
+**Option A: Docker (Recommended)**
 ```bash
 docker-compose -f docker/docker-compose.yml up
 ```
 
-Visit http://localhost:8000 (or :8080 for Docker) to see Forward Email branding.
+Visit http://localhost:8080 to see Forward Email branding with Redis support.
+
+**Option B: PHP Built-in Server**
+```bash
+cd dist
+php -S localhost:8000
+```
+
+Visit http://localhost:8000 (Note: Redis won't be available with this method).
 
 ## Repository Structure
 
 ```
 mail-overrides/
-├── mail/                      # Submodule → forwardemail/mail
-│                              # (which tracks upstream snappymail)
+├── mail/                      # Submodule → forwardemail/mail (clean, for building)
+│                              # (tracks upstream SnappyMail)
+├── dist/                      # Build output (gitignored)
+│                              # Contains final SnappyMail with overrides applied
 ├── plugins/
-│   └── forwardemail/         # Forward Email plugin
+│   ├── forwardemail/         # Forward Email branding plugin
+│   ├── client-ip-passthrough/  # Client IP forwarding plugin
+│   └── redis-ephemeral-sessions/  # Redis session storage plugin
 ├── themes/
 │   └── ForwardEmail/         # Forward Email theme
 ├── configs/
 │   ├── application.ini       # Pre-configured with plugin enabled
 │   └── include.php           # Custom PHP configuration
 ├── scripts/
-│   ├── build.sh             # Sync overrides → mail/
+│   ├── build.sh             # Build: mail/ → dist/ + apply overrides
+│   ├── clean.sh             # Remove dist/ directory
 │   └── update-snappymail.sh # Update mail submodule
 └── docker/                   # Local development only
 ```
@@ -94,26 +117,26 @@ mail-overrides/
 
 ### Making Changes
 
-**⚠️ Important**: Never edit files inside `mail/` submodule - they will be overwritten by `build.sh`
+**⚠️ Important**: Never edit files inside `mail/` or `dist/` - these are build artifacts
 
 1. Edit files in `plugins/` or `themes/` directories (at root level)
-2. Run `./scripts/build.sh` to sync into `mail/`
-3. Test locally
+2. Run `./scripts/build.sh` to rebuild `dist/` with your changes
+3. Test locally with Docker
 4. Commit and push
 
 ```bash
-# Example: Update login page
-vim plugins/forwardemail/templates/Views/User/Login.html
+# Example: Update Redis plugin
+vim plugins/redis-ephemeral-sessions/index.php
 
-# Rebuild
+# Rebuild dist/ with your changes
 ./scripts/build.sh
 
-# Test
-cd mail && php -S localhost:8000
+# Test with Docker
+docker-compose -f docker/docker-compose.yml restart
 
-# Commit
-git add plugins/forwardemail/
-git commit -m "Update login page branding"
+# Commit your changes (dist/ is gitignored)
+git add plugins/redis-ephemeral-sessions/
+git commit -m "Update Redis session plugin"
 git push
 ```
 

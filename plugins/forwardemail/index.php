@@ -4,7 +4,7 @@
  * Overrides login template with Forward Email branding and styling
  */
 
-class ForwardEmailPlugin extends \RainLoop\Plugins\AbstractPlugin
+class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 {
 	const
 		NAME     = 'Forward Email',
