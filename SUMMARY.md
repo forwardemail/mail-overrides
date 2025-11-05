@@ -46,7 +46,7 @@ vim plugins/forwardemail/templates/Views/User/Login.html
 
 # Build and test
 ./scripts/build.sh
-cd mail && php -S localhost:8000
+cd dist && php -S localhost:8000
 
 # Commit
 git commit -am "Update login page"
@@ -78,7 +78,7 @@ ansible-playbook ansible/playbooks/deploy-snappymail.yml
 
 2. **Test locally**:
    ```bash
-   cd mail && php -S localhost:8000
+   cd dist && php -S localhost:8000
    # Visit http://localhost:8000
    ```
 
@@ -110,7 +110,7 @@ ansible-playbook ansible/playbooks/deploy-snappymail.yml
 - `.gitmodules` - Submodule configuration
 
 ### Scripts
-- `scripts/build.sh` - Sync customizations to mail/
+- `scripts/build.sh` - Generate deployable artefacts in dist/
 - `scripts/deploy.sh` - Local deployment helper
 - `scripts/update-snappymail.sh` - Version updater
 

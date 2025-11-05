@@ -156,7 +156,7 @@ git commit -m "Update mail submodule to latest SnappyMail"
 
 # Rebuild and test
 ./scripts/build.sh
-cd mail && php -S localhost:8000
+cd dist && php -S localhost:8000
 
 # Push
 git push
@@ -191,12 +191,12 @@ git submodule update --init --recursive
 
 3. Deploy with Ansible (from forwardemail.net)
    → ansible-playbook playbooks/deploy-snappymail.yml
-   → Ansible runs build.sh and deploys mail/
+   → Ansible runs build.sh and deploys dist/
 ```
 
 The Ansible playbook in `forwardemail.net` will:
-1. Run `mail-overrides/scripts/build.sh` to sync customizations
-2. Deploy `mail-overrides/mail/` to production servers
+1. Run `mail-overrides/scripts/build.sh` to produce the `dist/` build output with customizations applied
+2. Deploy `mail-overrides/dist/` to production servers
 3. Configure web server, permissions, SSL (using shared configs)
 
 ## Docker (Local Development Only)
@@ -214,10 +214,10 @@ docker-compose -f docker/docker-compose.yml down
 ## Scripts
 
 ### `scripts/build.sh`
-Syncs Forward Email customizations into the `mail/` submodule:
-- Copies `plugins/forwardemail/` → `mail/snappymail/v/0.0.0/plugins/`
-- Copies `themes/ForwardEmail/` → `mail/snappymail/v/0.0.0/themes/`
-- Copies config files
+Generates the deployable `dist/` artefacts while leaving the `mail/` submodule pristine:
+- Copies the clean SnappyMail tree from `mail/` into `dist/`
+- Overlays `plugins/forwardemail/` and `themes/ForwardEmail/` into `dist/snappymail/v/0.0.0/`
+- Copies configuration files into `dist/data/_data_/_default_/`
 
 **Run this after any changes to plugins or themes.**
 

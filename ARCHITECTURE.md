@@ -26,7 +26,7 @@
 │ - plugins/forwardemail/  (branding)                             │
 │ - themes/ForwardEmail/   (styling)                              │
 │ - configs/              (pre-configured settings)               │
-│ - scripts/build.sh      (syncs overrides into mail/)            │
+│ - scripts/build.sh      (builds deployable dist/ artefacts)     │
 │ - Submodule points to: forwardemail/mail                        │
 └──────────────────────────────────────────────────────────────────┘
                               ↓ (git submodule)
@@ -41,7 +41,7 @@
 │   Deployment: ansible-playbook deploy-webmail.yml               │
 │   ↓                                                              │
 │   1. Run mail-overrides/scripts/build.sh                        │
-│   2. Deploy mail-overrides/mail/ to servers                     │
+│   2. Deploy mail-overrides/dist/ to servers                     │
 │   3. Apply shared nginx configs, SSL certs                      │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -141,7 +141,7 @@ ansible-playbook ansible/playbooks/deploy-webmail.yml
 # 1. Update mail-overrides only
 cd /path/to/mail-overrides
 vim plugins/forwardemail/templates/Views/User/Login.html
-./scripts/build.sh && cd mail && php -S localhost:8000  # Test
+./scripts/build.sh && cd dist && php -S localhost:8000  # Test
 git commit -am "Update login page branding"
 git push
 
@@ -161,14 +161,14 @@ ansible-playbook ansible/playbooks/deploy-webmail.yml
 Development:
 plugins/forwardemail/           (source)
     ↓ (./scripts/build.sh)
-mail/snappymail/.../plugins/    (built)
+dist/snappymail/.../plugins/    (built)
     ↓ (ansible deploy)
 /var/www/webmail/.../plugins/   (production)
 
 Production Access:
 User → https://mail.forwardemail.net
     ↓ (nginx from forwardemail.net ansible)
-/var/www/webmail/               (mail-overrides/mail/ deployed)
+/var/www/webmail/               (mail-overrides/dist/ deployed)
     ↓ (loads)
 /var/www/webmail/.../plugins/forwardemail/  (Forward Email branding)
 /var/www/webmail/.../themes/ForwardEmail/   (Forward Email theme)
@@ -177,7 +177,7 @@ User → https://mail.forwardemail.net
 ## Key Principles
 
 1. **forwardemail/mail**: Never contains Forward Email branding
-2. **mail-overrides**: Never deployed directly (only its mail/ subdirectory)
+2. **mail-overrides**: Never deploy the repo directly—first build and deploy the dist/ output
 3. **forwardemail.net**: Owns all production infrastructure
 4. **Build before deploy**: Always run build.sh before deploying
 5. **Test locally first**: Use PHP or Docker to test changes

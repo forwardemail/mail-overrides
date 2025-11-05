@@ -133,13 +133,12 @@ Create `ansible/roles/webmail/tasks/main.yml`:
     group: "{{ webmail_group }}"
     mode: '0755'
 
-- name: Sync webmail files from mail-overrides/mail
+- name: Sync webmail files from mail-overrides/dist
   synchronize:
-    src: "{{ mail_overrides }}/mail/"
+    src: "{{ mail_overrides }}/dist/"
     dest: "{{ webmail_dest }}/"
     delete: yes
     rsync_opts:
-      - "--exclude=data/*"
       - "--exclude=.git"
       - "--exclude=.gitmodules"
     owner: no

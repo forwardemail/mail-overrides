@@ -24,12 +24,12 @@ chmod +x scripts/*.sh
 ./scripts/build.sh
 ```
 
-This syncs Forward Email plugins/themes into the `mail/` directory.
+This generates the deployable `dist/` directory with Forward Email plugins, themes, and configs applied on top of the clean `mail/` submodule.
 
 ### 4. Test locally
 
 ```bash
-cd mail
+cd dist
 php -S localhost:8000
 # Visit http://localhost:8000
 ```
@@ -92,11 +92,11 @@ Edit `forwardemail.net/ansible/playbooks/deploy-webmail.yml`:
 
     - name: Deploy webmail
       synchronize:
-        src: "{{ mail_overrides_path }}/mail/"
+        src: "{{ mail_overrides_path }}/dist/"
         dest: "{{ webmail_dest }}"
         delete: yes
         rsync_opts:
-          - "--exclude=data/*"
+          - "--exclude=.git"
 
     - name: Set permissions
       file:
@@ -118,7 +118,7 @@ vim plugins/forwardemail/templates/Views/User/Login.html
 
 # Build and test
 ./scripts/build.sh
-cd mail && php -S localhost:8000
+cd dist && php -S localhost:8000
 
 # Commit
 git add plugins/

@@ -27,7 +27,7 @@ Docker is provided for local development only.
 ```bash
 cd mail-overrides
 ./scripts/build.sh
-cd mail && php -S localhost:8000
+cd dist && php -S localhost:8000
 ```
 
 ### Docker
@@ -62,7 +62,7 @@ vim plugins/forwardemail/templates/Views/User/Login.html
 
 # Test locally
 ./scripts/build.sh
-cd mail && php -S localhost:8000
+cd dist && php -S localhost:8000
 
 # Commit and push
 git add plugins/
@@ -107,7 +107,7 @@ ansible-playbook ansible/playbooks/deploy-webmail.yml \
 The Ansible playbook should:
 
 1. **Build** - Run `mail-overrides/scripts/build.sh` locally
-2. **Sync** - Deploy `mail-overrides/mail/` to servers
+2. **Sync** - Deploy `mail-overrides/dist/` to servers
 3. **Configure** - Use shared SSL certs, nginx configs from monorepo
 4. **Permissions** - Set correct ownership and permissions
 5. **Verify** - Check deployment succeeded
@@ -124,11 +124,9 @@ The Ansible playbook should:
 
 - name: Sync webmail to server
   synchronize:
-    src: "{{ playbook_dir }}/../../mail-overrides/mail/"
+    src: "{{ playbook_dir }}/../../mail-overrides/dist/"
     dest: /var/www/webmail/
     delete: yes
-    rsync_opts:
-      - "--exclude=data/*"
 
 - name: Apply shared nginx configuration
   template:
@@ -219,14 +217,14 @@ cd /path/to/forwardemail.net/mail-overrides
 ./scripts/build.sh
 
 # Check for errors
-ls -la mail/snappymail/v/0.0.0/plugins/
+ls -la dist/snappymail/v/0.0.0/plugins/
 ```
 
 ### Sync fails
 
 ```bash
 # Check rsync works
-rsync -avz --dry-run mail-overrides/mail/ server:/var/www/webmail/
+rsync -avz --dry-run mail-overrides/dist/ server:/var/www/webmail/
 ```
 
 ### Customizations don't appear

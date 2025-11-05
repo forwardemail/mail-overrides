@@ -118,11 +118,10 @@ Create `ansible/roles/snappymail/tasks/main.yml`:
 
 - name: Sync SnappyMail files
   synchronize:
-    src: "{{ snappymail_source }}/mail/"
+    src: "{{ snappymail_source }}/dist/"
     dest: "{{ snappymail_dest }}/"
     delete: yes
     rsync_opts:
-      - "--exclude=data/*"
       - "--exclude=.git"
     owner: no
     group: no

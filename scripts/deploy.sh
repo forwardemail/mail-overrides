@@ -29,7 +29,7 @@ case "$ENVIRONMENT" in
         echo "Starting local development server..."
         echo ""
         echo "Choose your preferred method:"
-        echo "  1. PHP built-in server: cd mail && php -S localhost:8000"
+        echo "  1. PHP built-in server: cd dist && php -S localhost:8000"
         echo "  2. Docker:              docker-compose -f docker/docker-compose.yml up"
         echo ""
         read -p "Start with Docker? (y/N): " -n 1 -r
@@ -37,7 +37,7 @@ case "$ENVIRONMENT" in
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             docker-compose -f docker/docker-compose.yml up
         else
-            cd mail
+            cd dist
             php -S localhost:8000
         fi
         ;;
