@@ -44,8 +44,9 @@
 				<div class="fe-form-group" data-bind="css: {'error': emailError}">
 					<label class="fe-label" for="fe-email">Email</label>
 					<div class="fe-input-wrapper">
-						<input id="fe-email" name="Email" required type="text" class="fe-input"
-							pattern="[^@\\s]+(@[^\\s]+)?" inputmode="email"
+					<input id="fe-email" name="Email" required type="text" class="fe-input"
+						pattern=".*"
+						inputmode="email"
 							autofocus autocomplete="email" autocorrect="off" autocapitalize="off"
 							data-bind="textInput: email, disable: submitRequest"
 							placeholder="Alias Email">

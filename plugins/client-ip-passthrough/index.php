@@ -169,7 +169,7 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 */
 	public function ModifySmtpEhlo(\RainLoop\Model\Account $oAccount,
 		\MailSo\Smtp\SmtpClient $oSmtpClient,
-		array &$aSmtpCredentials) : void
+		&$mSmtpSettings) : void
 	{
 		// Check if SMTP passthrough is enabled
 		if (!$this->Config()->Get('plugin', 'enable_smtp', true)) {
@@ -180,12 +180,20 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 		// Only modify EHLO if we successfully detected an IP
 		if ($clientIp !== 'unknown') {
-			$aSmtpCredentials['Ehlo'] = $this->formatIpForEhlo($clientIp);
+			$ehloValue = $this->formatIpForEhlo($clientIp);
+
+			if ($mSmtpSettings instanceof \MailSo\Smtp\Settings) {
+				$mSmtpSettings->Ehlo = $ehloValue;
+			} elseif ($mSmtpSettings instanceof \MailSo\Net\ConnectSettings) {
+				$mSmtpSettings->Ehlo = $ehloValue;
+			} elseif (\is_array($mSmtpSettings)) {
+				$mSmtpSettings['Ehlo'] = $ehloValue;
+			}
 
 			// Log the modification if logging is enabled
 			if ($this->Manager()->Actions()->Logger()) {
 				$this->Manager()->Actions()->Logger()->Write(
-					'Client IP Passthrough: SMTP EHLO set to ' . $aSmtpCredentials['Ehlo'] . ' for ' . $oAccount->Email(),
+					'Client IP Passthrough: SMTP EHLO set to ' . $ehloValue . ' for ' . $oAccount->Email(),
 					\LOG_INFO,
 					'PLUGIN'
 				);
