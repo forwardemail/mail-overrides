@@ -4,8 +4,8 @@
 
 ```bash
 # Clone and initialize
-git clone https://github.com/forwardemail/hosted-snappymail.git
-cd hosted-snappymail
+git clone https://github.com/forwardemail/mail-overrides.git
+cd mail-overrides
 git submodule update --init --recursive
 
 # Build

@@ -2,7 +2,7 @@
 
 ## What Was Created
 
-A complete `hosted-snappymail` repository configured for:
+A complete `mail-overrides` repository configured for:
 - **Local Development**: Docker and PHP built-in server
 - **Production Deployment**: Ansible integration with main monorepo
 - **Version Control**: Git submodule approach for clean separation
@@ -10,7 +10,7 @@ A complete `hosted-snappymail` repository configured for:
 ## Repository Structure
 
 ```
-hosted-snappymail/
+mail-overrides/
 ├── plugins/forwardemail/     # ✓ Custom plugin with branded login
 ├── themes/ForwardEmail/       # ✓ Custom theme with styles
 ├── configs/                   # ✓ Pre-configured settings
@@ -22,7 +22,7 @@ hosted-snappymail/
 ## Key Design Decisions
 
 ### 1. Submodule Approach (Option 4)
-- `hosted-snappymail` is the primary deployment repo
+- `mail-overrides` is the primary deployment repo
 - Contains `mail/` as Git submodule to SnappyMail upstream
 - Customizations live at root level, not in submodule
 - Clean separation of concerns
@@ -34,7 +34,7 @@ hosted-snappymail/
 
 ### 3. Ansible Integration
 - Comprehensive Ansible playbook examples provided
-- `hosted-snappymail` will be submodule in main monorepo
+- `mail-overrides` will be submodule in main monorepo
 - Automated deployment to staging and production
 
 ## Workflow Summary
@@ -56,11 +56,11 @@ git push
 ### Production Deployment
 ```bash
 # From main monorepo
-cd forwardemail/hosted-snappymail
+cd forwardemail/mail-overrides
 git pull
 cd ..
-git add hosted-snappymail
-git commit -m "Update hosted-snappymail"
+git add mail-overrides
+git commit -m "Update mail-overrides"
 
 # Deploy with Ansible
 ansible-playbook ansible/playbooks/deploy-snappymail.yml
@@ -70,7 +70,7 @@ ansible-playbook ansible/playbooks/deploy-snappymail.yml
 
 1. **Initialize mail submodule**:
    ```bash
-   cd /Users/shaunwarman/Development/Source/empire/hosted-snappymail
+   cd /Users/shaunwarman/Development/Source/empire/mail-overrides
    git submodule add https://github.com/the-djmaze/snappymail.git mail
    chmod +x scripts/*.sh
    ./scripts/build.sh
@@ -85,15 +85,15 @@ ansible-playbook ansible/playbooks/deploy-snappymail.yml
 3. **Push to GitHub**:
    ```bash
    git add .
-   git commit -m "Initial hosted-snappymail setup"
-   git remote add origin https://github.com/forwardemail/hosted-snappymail.git
+   git commit -m "Initial mail-overrides setup"
+   git remote add origin https://github.com/forwardemail/mail-overrides.git
    git push -u origin main
    ```
 
 4. **Integrate with monorepo**:
    ```bash
    cd /path/to/forwardemail/monorepo
-   git submodule add https://github.com/forwardemail/hosted-snappymail.git hosted-snappymail
+   git submodule add https://github.com/forwardemail/mail-overrides.git mail-overrides
    ```
 
 5. **Set up Ansible**:

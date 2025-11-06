@@ -1,6 +1,6 @@
 # Ansible Integration Guide
 
-This guide explains how to integrate `hosted-snappymail` with the main Forward Email monorepo's Ansible deployment.
+This guide explains how to integrate `mail-overrides` with the main Forward Email monorepo's Ansible deployment.
 
 ## Adding as Submodule to Monorepo
 
@@ -8,14 +8,14 @@ This guide explains how to integrate `hosted-snappymail` with the main Forward E
 cd /path/to/forwardemail/monorepo
 
 # Add as submodule
-git submodule add https://github.com/forwardemail/hosted-snappymail.git hosted-snappymail
+git submodule add https://github.com/forwardemail/mail-overrides.git mail-overrides
 
 # Initialize and update
 git submodule update --init --recursive
 
 # Commit
-git add .gitmodules hosted-snappymail
-git commit -m "Add hosted-snappymail as submodule"
+git add .gitmodules mail-overrides
+git commit -m "Add mail-overrides as submodule"
 ```
 
 ## Directory Structure in Monorepo
@@ -34,7 +34,7 @@ forwardemail/
 │   └── inventory/
 │       ├── staging
 │       └── production
-├── hosted-snappymail/          # Submodule
+├── mail-overrides/          # Submodule
 │   ├── mail/                   # Submodule
 │   ├── plugins/
 │   ├── themes/
@@ -53,7 +53,7 @@ Create `ansible/playbooks/deploy-snappymail.yml`:
   become: yes
   vars:
     repo_root: "{{ playbook_dir }}/../.."
-    snappymail_source: "{{ repo_root }}/hosted-snappymail"
+    snappymail_source: "{{ repo_root }}/mail-overrides"
     snappymail_dest: "/var/www/snappymail"
     snappymail_user: "www-data"
     snappymail_group: "www-data"
@@ -292,8 +292,8 @@ ansible-playbook \
 ## Updating SnappyMail Version
 
 ```bash
-# Update hosted-snappymail submodule
-cd hosted-snappymail
+# Update mail-overrides submodule
+cd mail-overrides
 
 # Update SnappyMail version
 ./scripts/update-snappymail.sh v2.38.0
@@ -302,7 +302,7 @@ cd hosted-snappymail
 cd ..
 
 # Commit the submodule update
-git add hosted-snappymail
+git add mail-overrides
 git commit -m "Update SnappyMail to v2.38.0"
 
 # Deploy
@@ -320,7 +320,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'hosted-snappymail/**'
+      - 'mail-overrides/**'
 
 jobs:
   deploy:
