@@ -137,7 +137,7 @@ enable = On
 enabled_list = "forwardemail"
 EOF
 
-# Start PHP-FPM or Apache
+# Start PHP-FPM
 exec "$@"
 ```
 

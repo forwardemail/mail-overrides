@@ -289,6 +289,55 @@ body#rl-app {
 	margin: 0 auto;
 }
 
+@media (prefers-color-scheme: light) {
+	body#rl-app {
+		background-color: #f8fafc;
+		color: #0f172a;
+	}
+
+	.fe-nav-link {
+		color: rgba(37, 99, 235, 0.8);
+	}
+
+	.fe-login-card {
+		background: rgba(255, 255, 255, 0.92);
+		color: #0f172a;
+		border: 1px solid rgba(203, 213, 225, 0.8);
+		box-shadow:
+			0 14px 30px rgba(15, 23, 42, 0.18),
+			0 2px 1px rgba(15, 23, 42, 0.08);
+	}
+
+	.fe-login-title {
+		color: #0f172a;
+	}
+
+	.fe-login-subtitle {
+		color: rgba(71, 85, 105, 0.9);
+	}
+
+	.fe-label {
+		color: rgba(15, 23, 42, 0.85);
+	}
+
+	.fe-input {
+		background-color: rgba(248, 250, 252, 0.9);
+		color: #0f172a;
+		border-color: rgba(148, 163, 184, 0.45);
+	}
+
+	.fe-login-footer {
+		color: rgba(15, 23, 42, 0.7);
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	body#rl-app {
+		background-color: #020617;
+		color: #f8fafc;
+	}
+}
+
 @media (min-width: 992px) {
 	.fe-login-card {
 		max-width: 560px;
