@@ -52,13 +52,15 @@ Before you can use the overrides, SnappyMail needs to be built once:
 
 ```bash
 cd mail
-npm install
+npm ci  # Use npm ci for locked dependencies (recommended)
 npx gulp
 
 cd ..
 ```
 
 This compiles the CSS/JS assets. You only need to do this once (or when updating the mail submodule).
+
+**Note:** We use `npm ci` instead of `npm install` to ensure reproducible builds using the locked dependencies in `package-lock.json`.
 
 ### 3. Build Distribution
 

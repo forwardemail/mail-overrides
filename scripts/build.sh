@@ -31,7 +31,7 @@ if [ ! -f "mail/snappymail/v/0.0.0/static/css/boot.min.css" ]; then
     echo "SnappyMail needs to be built first. Run:"
     echo ""
     echo "  cd mail"
-    echo "  npm install"
+    echo "  npm ci  # Use npm ci for locked dependencies"
     echo "  npx gulp"
     echo "  cd .."
     echo ""

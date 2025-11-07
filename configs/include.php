@@ -4,6 +4,13 @@
  * This file is loaded before SnappyMail initializes
  */
 
+// Set default HOME environment variable if not set
+// This prevents PHP warnings in GPG operations
+if (!isset($_ENV['HOME']) && !getenv('HOME')) {
+	$_ENV['HOME'] = '/tmp';
+	putenv('HOME=/tmp');
+}
+
 // Uncomment to enable multiple domain installation
 // define('MULTIDOMAIN', 1);
 

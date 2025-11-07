@@ -81,6 +81,10 @@ Create `ansible/playbooks/deploy-snappymail.yml`:
 
 ## Ansible Role
 
+**Note**: Forward Email uses Nginx (not Apache) for production deployments. The actual deployment playbook is in `forwardemail.net/ansible/playbooks/mail.yml`.
+
+Below is a reference example for a role-based approach:
+
 Create `ansible/roles/snappymail/tasks/main.yml`:
 
 ```yaml
@@ -88,25 +92,16 @@ Create `ansible/roles/snappymail/tasks/main.yml`:
 - name: Install required packages
   apt:
     name:
-      - php8.2
+      - php8.2-fpm
+      - php8.2-cli
       - php8.2-intl
       - php8.2-opcache
-      - php8.2-mysql
       - php8.2-zip
       - php8.2-xml
-      - apache2
-      - libapache2-mod-php8.2
+      - php8.2-redis
+      - nginx
     state: present
     update_cache: yes
-
-- name: Enable Apache modules
-  apache2_module:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - rewrite
-    - headers
-  notify: restart apache
 
 - name: Create SnappyMail directory
   file:
@@ -125,7 +120,7 @@ Create `ansible/roles/snappymail/tasks/main.yml`:
       - "--exclude=.git"
     owner: no
     group: no
-  notify: restart apache
+  notify: reload nginx
 
 - name: Set ownership
   file:
@@ -140,7 +135,8 @@ Create `ansible/roles/snappymail/tasks/main.yml`:
     state: directory
     owner: "{{ snappymail_user }}"
     group: "{{ snappymail_group }}"
-    mode: '0755'
+    mode: '0700'
+    recurse: yes
 
 - name: Create configs directory
   file:
@@ -167,18 +163,20 @@ Create `ansible/roles/snappymail/tasks/main.yml`:
     group: "{{ snappymail_group }}"
     mode: '0644'
 
-- name: Configure Apache vhost
+- name: Configure Nginx site
   template:
-    src: snappymail-vhost.conf.j2
-    dest: /etc/apache2/sites-available/snappymail.conf
+    src: snappymail-site.conf.j2
+    dest: /etc/nginx/sites-available/snappymail.conf
     mode: '0644'
-  notify: restart apache
+    validate: 'nginx -t -c /etc/nginx/nginx.conf'
+  notify: reload nginx
 
 - name: Enable SnappyMail site
-  command: a2ensite snappymail
-  args:
-    creates: /etc/apache2/sites-enabled/snappymail.conf
-  notify: restart apache
+  file:
+    src: /etc/nginx/sites-available/snappymail.conf
+    dest: /etc/nginx/sites-enabled/snappymail.conf
+    state: link
+  notify: reload nginx
 
 - name: Verify ForwardEmail plugin exists
   stat:
@@ -197,44 +195,90 @@ Create `ansible/roles/snappymail/handlers/main.yml`:
 
 ```yaml
 ---
-- name: restart apache
+- name: reload nginx
   service:
-    name: apache2
-    state: restarted
+    name: nginx
+    state: reloaded
 ```
 
-## Apache VHost Template
+## Nginx Site Configuration Template
 
-Create `ansible/roles/snappymail/templates/snappymail-vhost.conf.j2`:
+The actual production template is at `forwardemail.net/ansible/playbooks/templates/snappymail/snappymail-site.conf.j2`.
 
-```apache
-<VirtualHost *:80>
-    ServerName {{ snappymail_domain }}
-    DocumentRoot {{ snappymail_dest }}
+Create `ansible/roles/snappymail/templates/snappymail-site.conf.j2`:
 
-    # Redirect to HTTPS
-    RewriteEngine On
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}$1 [R=301,L]
-</VirtualHost>
+```nginx
+# SnappyMail Nginx Configuration
 
-<VirtualHost *:443>
-    ServerName {{ snappymail_domain }}
-    DocumentRoot {{ snappymail_dest }}
+upstream php-fpm {
+    server unix:/run/php/php8.2-fpm.sock;
+    keepalive 32;
+}
 
-    SSLEngine on
-    SSLCertificateFile /etc/letsencrypt/live/{{ snappymail_domain }}/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/{{ snappymail_domain }}/privkey.pem
+{% if lookup('env', 'MAIL_SSL_ENABLED') | default('false') == 'true' %}
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ snappymail_domain }};
+    return 301 https://$server_name$request_uri;
+}
+{% endif %}
 
-    <Directory {{ snappymail_dest }}>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
+server {
+{% if lookup('env', 'MAIL_SSL_ENABLED') | default('false') == 'true' %}
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    ssl_certificate /etc/letsencrypt/live/{{ snappymail_domain }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ snappymail_domain }}/privkey.pem;
+{% else %}
+    listen 80;
+    listen [::]:80;
+{% endif %}
 
-    ErrorLog ${APACHE_LOG_DIR}/snappymail-error.log
-    CustomLog ${APACHE_LOG_DIR}/snappymail-access.log combined
-</VirtualHost>
+    server_name {{ snappymail_domain }};
+    root {{ snappymail_dest }}/dist;
+    index index.php;
+    charset utf-8;
+
+    # Security headers
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Logging
+    access_log /var/log/nginx/snappymail-access.log;
+    error_log /var/log/nginx/snappymail-error.log warn;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        # Security: Don't execute PHP in writable directories
+        location ~ ^/(data|cache)/ {
+            deny all;
+            return 404;
+        }
+
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass php-fpm;
+        fastcgi_index index.php;
+    }
+
+    # Deny access to data directory
+    location ^~ /data/ {
+        deny all;
+        return 404;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        return 404;
+    }
+}
 ```
 
 ## Inventory Files
