@@ -197,6 +197,7 @@ body#rl-app {
 	height: 60px;
 }
 
+/* Default to dark colors (for dark mode/galaxy background) */
 .fe-navbar-brand {
 	display: inline-flex;
 	align-items: center;
@@ -217,6 +218,8 @@ body#rl-app {
 	opacity: 0.85;
 	text-decoration: none;
 }
+
+/* Keep navbar text white in both light and dark mode (always on galaxy background) */
 
 .fe-navbar-icon {
 	display: inline-block;
@@ -289,18 +292,120 @@ body#rl-app {
 	margin: 0 auto;
 }
 
+/* Light mode styles using :not([data-themes~="dark"]) selector */
+/* Note: Navbar remains white since it's always on galaxy background */
+
+:not([data-themes~="dark"]) .fe-login-card {
+	background: rgba(255, 255, 255, 0.95);
+	color: #0f172a;
+	border: 1px solid rgba(203, 213, 225, 0.8);
+	box-shadow:
+		0 14px 30px rgba(15, 23, 42, 0.18),
+		0 2px 1px rgba(15, 23, 42, 0.08);
+}
+
+:not([data-themes~="dark"]) .fe-login-title {
+	color: #0f172a;
+}
+
+:not([data-themes~="dark"]) .fe-login-subtitle {
+	color: rgba(71, 85, 105, 0.9);
+}
+
+:not([data-themes~="dark"]) .fe-label {
+	color: rgba(15, 23, 42, 0.9);
+}
+
+:not([data-themes~="dark"]) .fe-input {
+	background-color: #ffffff;
+	color: #0f172a;
+	border-color: rgba(148, 163, 184, 0.45);
+}
+
+:not([data-themes~="dark"]) .fe-input::placeholder {
+	color: rgba(100, 116, 139, 0.65);
+}
+
+:not([data-themes~="dark"]) .fe-input:focus {
+	background-color: #ffffff;
+	border-color: rgba(37, 99, 235, 0.85);
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+:not([data-themes~="dark"]) .fe-checkbox {
+	color: rgba(15, 23, 42, 0.85);
+}
+
+:not([data-themes~="dark"]) .fe-checkbox:hover {
+	background-color: rgba(241, 245, 249, 0.8);
+}
+
+:not([data-themes~="dark"]) .fe-checkbox-icon {
+	color: #3b82f6;
+}
+
+:not([data-themes~="dark"]) .fe-checkbox-label {
+	color: rgba(15, 23, 42, 0.85);
+}
+
+:not([data-themes~="dark"]) .fe-lang-btn {
+	background-color: #ffffff;
+	color: rgba(15, 23, 42, 0.85);
+	border-color: rgba(148, 163, 184, 0.45);
+}
+
+:not([data-themes~="dark"]) .fe-lang-btn:hover {
+	border-color: rgba(37, 99, 235, 0.8);
+	color: #1e40af;
+	box-shadow: 0 12px 22px rgba(37, 99, 235, 0.25);
+}
+
+:not([data-themes~="dark"]) .fe-login-footer {
+	color: rgba(15, 23, 42, 0.7);
+}
+
+:not([data-themes~="dark"]) .fe-footer-link {
+	color: #2563eb;
+}
+
+:not([data-themes~="dark"]) .fe-footer-link:hover {
+	color: #1e40af;
+}
+
+:not([data-themes~="dark"]) .fe-footer-separator {
+	color: rgba(100, 116, 139, 0.6);
+}
+
+:not([data-themes~="dark"]) .fe-alert {
+	background-color: rgba(254, 226, 226, 0.8);
+	border-color: rgba(220, 38, 38, 0.5);
+	color: #991b1b;
+}
+
+:not([data-themes~="dark"]) .fe-alert p {
+	color: rgba(153, 27, 27, 0.85);
+}
+
+:not([data-themes~="dark"]) .fe-alert-close {
+	color: #991b1b;
+}
+
+:not([data-themes~="dark"]) .fe-alert-close:hover {
+	background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* Fallback for browsers that support prefers-color-scheme */
 @media (prefers-color-scheme: light) {
 	body#rl-app {
 		background-color: #f8fafc;
 		color: #0f172a;
 	}
 
-	.fe-nav-link {
-		color: rgba(37, 99, 235, 0.8);
-	}
+	/* Note: Navbar stays white (on galaxy background) */
 
+	/* Login card - white with dark text */
 	.fe-login-card {
-		background: rgba(255, 255, 255, 0.92);
+		background: rgba(255, 255, 255, 0.95);
 		color: #0f172a;
 		border: 1px solid rgba(203, 213, 225, 0.8);
 		box-shadow:
@@ -317,17 +422,89 @@ body#rl-app {
 	}
 
 	.fe-label {
-		color: rgba(15, 23, 42, 0.85);
+		color: rgba(15, 23, 42, 0.9);
 	}
 
 	.fe-input {
-		background-color: rgba(248, 250, 252, 0.9);
+		background-color: #ffffff;
 		color: #0f172a;
 		border-color: rgba(148, 163, 184, 0.45);
 	}
 
+	.fe-input::placeholder {
+		color: rgba(100, 116, 139, 0.65);
+	}
+
+	.fe-input:focus {
+		background-color: #ffffff;
+		border-color: rgba(37, 99, 235, 0.85);
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+	}
+
+	/* Checkbox - dark text on light background */
+	.fe-checkbox {
+		color: rgba(15, 23, 42, 0.85);
+	}
+
+	.fe-checkbox:hover {
+		background-color: rgba(241, 245, 249, 0.8);
+	}
+
+	.fe-checkbox-icon {
+		color: #3b82f6;
+	}
+
+	.fe-checkbox-label {
+		color: rgba(15, 23, 42, 0.85);
+	}
+
+	/* Language button */
+	.fe-lang-btn {
+		background-color: #ffffff;
+		color: rgba(15, 23, 42, 0.85);
+		border-color: rgba(148, 163, 184, 0.45);
+	}
+
+	.fe-lang-btn:hover {
+		border-color: rgba(37, 99, 235, 0.8);
+		color: #1e40af;
+		box-shadow: 0 12px 22px rgba(37, 99, 235, 0.25);
+	}
+
+	/* Footer */
 	.fe-login-footer {
 		color: rgba(15, 23, 42, 0.7);
+	}
+
+	.fe-footer-link {
+		color: #2563eb;
+	}
+
+	.fe-footer-link:hover {
+		color: #1e40af;
+	}
+
+	.fe-footer-separator {
+		color: rgba(100, 116, 139, 0.6);
+	}
+
+	/* Alert - adjusted for light mode */
+	.fe-alert {
+		background-color: rgba(254, 226, 226, 0.8);
+		border-color: rgba(220, 38, 38, 0.5);
+		color: #991b1b;
+	}
+
+	.fe-alert p {
+		color: rgba(153, 27, 27, 0.85);
+	}
+
+	.fe-alert-close {
+		color: #991b1b;
+	}
+
+	.fe-alert-close:hover {
+		background-color: rgba(220, 38, 38, 0.1);
 	}
 }
 
