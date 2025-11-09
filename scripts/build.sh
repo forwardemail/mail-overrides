@@ -110,9 +110,18 @@ mkdir -p dist/data/_data_/_default_/domains
 
 # Apply overrides: Copy application.ini if exists
 if [ -f "configs/application.ini" ]; then
-    echo "→ Applying application.ini..."
-    cp configs/application.ini dist/data/_data_/_default_/configs/
-    echo "  ✓ Application config applied"
+    echo "→ Applying application.ini with cache-busting..."
+
+    # Generate cache version from git commit (short hash)
+    GIT_VERSION=$(git rev-parse --short HEAD 2>/dev/null || echo "v1")
+
+    # Copy application.ini and update cache indexes with git version
+    cp configs/application.ini dist/data/_data_/_default_/configs/application.ini
+    sed -i.bak "s/^index = .*/index = \"$GIT_VERSION\"/" dist/data/_data_/_default_/configs/application.ini
+    sed -i.bak "s/^fast_cache_index = .*/fast_cache_index = \"$GIT_VERSION\"/" dist/data/_data_/_default_/configs/application.ini
+    rm -f dist/data/_data_/_default_/configs/application.ini.bak
+
+    echo "  ✓ Application config applied (cache version: $GIT_VERSION)"
 fi
 
 # Apply overrides: Copy plugins.ini if exists
