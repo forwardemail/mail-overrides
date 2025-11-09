@@ -16,6 +16,21 @@ echo ""
 
 cd "$ROOT_DIR"
 
+# Determine version to use
+# 1. Check for SNAPPYMAIL_VERSION environment variable (Ansible can set this)
+# 2. Check for FORWARDEMAIL_VERSION environment variable (alternative)
+# 3. Default to 0.0.0 (local Docker development)
+if [ -n "$SNAPPYMAIL_VERSION" ]; then
+    VERSION="$SNAPPYMAIL_VERSION"
+    echo "→ Using version from SNAPPYMAIL_VERSION env: $VERSION"
+elif [ -n "$FORWARDEMAIL_VERSION" ]; then
+    VERSION="$FORWARDEMAIL_VERSION"
+    echo "→ Using version from FORWARDEMAIL_VERSION env: $VERSION"
+else
+    VERSION="0.0.0"
+    echo "→ Using default development version: $VERSION"
+fi
+
 # Check if mail submodule exists
 if [ ! -e "mail/.git" ] && [ ! -d "mail/snappymail" ]; then
     echo "ERROR: mail submodule not initialized!"
@@ -50,30 +65,56 @@ echo "→ Copying SnappyMail from mail/ to dist/..."
 rsync -a --exclude='.git' --exclude='node_modules' --exclude='.docker' mail/ dist/
 echo "  ✓ SnappyMail copied to dist/"
 
-# Force production mode (disable dev mode even for 0.0.0 version)
-echo "→ Patching index.php to force production mode..."
+# Patch index.php to use dynamic version and force production mode
+echo "→ Patching index.php (version: $VERSION, production mode)..."
 PHP_BIN="${PHP_BIN:-$(command -v php || true)}"
 if [ -n "$PHP_BIN" ]; then
     "$PHP_BIN" -r "
+\$version = '$VERSION';
 \$content = file_get_contents('dist/index.php');
+
+// Replace APP_VERSION
+\$content = preg_replace(
+    \"/define\\('APP_VERSION',\\s*'[^']*'\\);/\",
+    \"define('APP_VERSION', '\$version');\",
+    \$content
+);
+
+// Force production mode
 \$search = \"define('APP_INDEX_ROOT_PATH', __DIR__ . DIRECTORY_SEPARATOR);\";
 \$replace = \"define('APP_INDEX_ROOT_PATH', __DIR__ . DIRECTORY_SEPARATOR);\n}\n\n// Force production mode\nif (!defined('SNAPPYMAIL_DEV')) {\n\tdefine('SNAPPYMAIL_DEV', false);\";
 \$content = str_replace(\$search, \$replace, \$content);
+
 file_put_contents('dist/index.php', \$content);
 "
-    echo "  ✓ Production mode forced (via ${PHP_BIN})"
+    echo "  ✓ Version set to $VERSION, production mode forced"
 else
-    echo "  ⚠ PHP CLI not found; skipping production mode patch."
-    echo "    Install PHP or set PHP_BIN to force production mode during build."
+    echo "  ⚠ PHP CLI not found; skipping version/production mode patch."
+    echo "    Install PHP or set PHP_BIN to enable versioning and production mode."
 fi
 
-# Detect SnappyMail version directory in dist
-SNAPPYMAIL_VERSION_DIR=$(find dist/snappymail/v -maxdepth 1 -type d | grep -E 'v/[0-9]' | head -1)
-if [ -z "$SNAPPYMAIL_VERSION_DIR" ]; then
-    SNAPPYMAIL_VERSION_DIR="dist/snappymail/v/0.0.0"
+# Set up versioned directory structure
+# If VERSION is not 0.0.0, we need to copy from v/0.0.0 to v/$VERSION
+if [ "$VERSION" != "0.0.0" ]; then
+    echo "→ Creating versioned directory structure for v/$VERSION..."
+
+    if [ ! -d "dist/snappymail/v/0.0.0" ]; then
+        echo "ERROR: Source directory dist/snappymail/v/0.0.0 not found!"
+        exit 1
+    fi
+
+    # Copy 0.0.0 to the versioned directory
+    mkdir -p "dist/snappymail/v/$VERSION"
+    rsync -a dist/snappymail/v/0.0.0/ "dist/snappymail/v/$VERSION/"
+
+    # Remove the 0.0.0 directory to keep only the versioned one
+    rm -rf dist/snappymail/v/0.0.0
+
+    echo "  ✓ Versioned directory created: dist/snappymail/v/$VERSION"
 fi
 
-echo "→ SnappyMail version directory: $SNAPPYMAIL_VERSION_DIR"
+SNAPPYMAIL_VERSION_DIR="dist/snappymail/v/$VERSION"
+echo "→ Using SnappyMail version directory: $SNAPPYMAIL_VERSION_DIR"
 echo ""
 
 # Apply overrides: Sync plugins
@@ -110,18 +151,9 @@ mkdir -p dist/data/_data_/_default_/domains
 
 # Apply overrides: Copy application.ini if exists
 if [ -f "configs/application.ini" ]; then
-    echo "→ Applying application.ini with cache-busting..."
-
-    # Generate cache version from git commit (short hash)
-    GIT_VERSION=$(git rev-parse --short HEAD 2>/dev/null || echo "v1")
-
-    # Copy application.ini and update cache indexes with git version
-    cp configs/application.ini dist/data/_data_/_default_/configs/application.ini
-    sed -i.bak "s/^index = .*/index = \"$GIT_VERSION\"/" dist/data/_data_/_default_/configs/application.ini
-    sed -i.bak "s/^fast_cache_index = .*/fast_cache_index = \"$GIT_VERSION\"/" dist/data/_data_/_default_/configs/application.ini
-    rm -f dist/data/_data_/_default_/configs/application.ini.bak
-
-    echo "  ✓ Application config applied (cache version: $GIT_VERSION)"
+    echo "→ Applying application.ini..."
+    cp configs/application.ini dist/data/_data_/_default_/configs/
+    echo "  ✓ Application config applied"
 fi
 
 # Apply overrides: Copy plugins.ini if exists
