@@ -276,11 +276,11 @@ body#rl-app {
 .fe-login-card {
 	width: 100%;
 	max-width: 520px;
-	background: rgba(15, 23, 42, 0.78);
+	background: rgba(15, 23, 42, 0.95);
 	backdrop-filter: blur(18px);
 	-webkit-backdrop-filter: blur(18px);
 	border-radius: 22px;
-	border: 1px solid rgba(148, 163, 184, 0.28);
+	border: none;
 	padding: 48px 48px;
 	box-shadow:
 		0 40px 80px rgba(2, 6, 23, 0.55),
@@ -296,9 +296,9 @@ body#rl-app {
 /* Note: Navbar remains white since it's always on galaxy background */
 
 :not([data-themes~="dark"]) .fe-login-card {
-	background: rgba(255, 255, 255, 0.95);
+	background: #ffffff;
 	color: #0f172a;
-	border: 1px solid rgba(203, 213, 225, 0.8);
+	border: none;
 	box-shadow:
 		0 14px 30px rgba(15, 23, 42, 0.18),
 		0 2px 1px rgba(15, 23, 42, 0.08);
@@ -405,9 +405,9 @@ body#rl-app {
 
 	/* Login card - white with dark text */
 	.fe-login-card {
-		background: rgba(255, 255, 255, 0.95);
+		background: #ffffff;
 		color: #0f172a;
-		border: 1px solid rgba(203, 213, 225, 0.8);
+		border: none;
 		box-shadow:
 			0 14px 30px rgba(15, 23, 42, 0.18),
 			0 2px 1px rgba(15, 23, 42, 0.08);
@@ -508,10 +508,105 @@ body#rl-app {
 	}
 }
 
+/* Dark mode using media query + data-themes selector */
 @media (prefers-color-scheme: dark) {
-	body#rl-app {
+	:not([data-themes~="light"]) body#rl-app {
 		background-color: #020617;
 		color: #f8fafc;
+	}
+
+	:not([data-themes~="light"]) .fe-login-card {
+		background: rgba(15, 23, 42, 0.95);
+		color: #f8fafc;
+	}
+
+	:not([data-themes~="light"]) .fe-login-title {
+		color: #f8fafc;
+	}
+
+	:not([data-themes~="light"]) .fe-login-subtitle {
+		color: rgba(226, 232, 240, 0.78);
+	}
+
+	:not([data-themes~="light"]) .fe-label {
+		color: rgba(226, 232, 240, 0.9);
+	}
+
+	:not([data-themes~="light"]) .fe-input {
+		background-color: rgba(15, 23, 42, 0.62);
+		color: #f8fafc;
+		border-color: rgba(148, 163, 184, 0.35);
+	}
+
+	:not([data-themes~="light"]) .fe-input::placeholder {
+		color: rgba(148, 163, 184, 0.65);
+	}
+
+	:not([data-themes~="light"]) .fe-input:focus {
+		background-color: rgba(15, 23, 42, 0.82);
+		border-color: rgba(99, 102, 241, 0.85);
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+	}
+
+	:not([data-themes~="light"]) .fe-checkbox {
+		color: rgba(226, 232, 240, 0.78);
+	}
+
+	:not([data-themes~="light"]) .fe-checkbox:hover {
+		background-color: rgba(15, 23, 42, 0.6);
+	}
+
+	:not([data-themes~="light"]) .fe-checkbox-icon {
+		color: #93c5fd;
+	}
+
+	:not([data-themes~="light"]) .fe-checkbox-label {
+		color: rgba(226, 232, 240, 0.78);
+	}
+
+	:not([data-themes~="light"]) .fe-lang-btn {
+		background-color: rgba(15, 23, 42, 0.62);
+		color: rgba(226, 232, 240, 0.85);
+		border-color: rgba(148, 163, 184, 0.35);
+	}
+
+	:not([data-themes~="light"]) .fe-lang-btn:hover {
+		border-color: rgba(99, 102, 241, 0.8);
+		color: #bfdbfe;
+	}
+
+	:not([data-themes~="light"]) .fe-login-footer {
+		color: rgba(226, 232, 240, 0.68);
+	}
+
+	:not([data-themes~="light"]) .fe-footer-link {
+		color: #93c5fd;
+	}
+
+	:not([data-themes~="light"]) .fe-footer-link:hover {
+		color: #d6e4ff;
+	}
+
+	:not([data-themes~="light"]) .fe-footer-separator {
+		color: rgba(148, 163, 184, 0.6);
+	}
+
+	:not([data-themes~="light"]) .fe-alert {
+		background-color: rgba(248, 113, 113, 0.15);
+		border-color: rgba(248, 113, 113, 0.45);
+		color: #fecaca;
+	}
+
+	:not([data-themes~="light"]) .fe-alert p {
+		color: rgba(254, 202, 202, 0.85);
+	}
+
+	:not([data-themes~="light"]) .fe-alert-close {
+		color: #fecaca;
+	}
+
+	:not([data-themes~="light"]) .fe-alert-close:hover {
+		background-color: rgba(248, 113, 113, 0.15);
 	}
 }
 
