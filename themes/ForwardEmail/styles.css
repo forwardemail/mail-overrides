@@ -77,22 +77,22 @@
 	--nc-list-max-width: var(--list-max-width, 300px);
 	--nc-breakpoint-mobile: var(--breakpoint-mobile, 1024px);
 
-	/* ForwardEmail Primary Colors */
-	--nc-color-primary: var(--color-primary, #1a73e8);
-	--nc-color-primary-default: var(--color-primary-default, #1a73e8);
+	/* ForwardEmail Primary Colors - lighter blue for light mode */
+	--nc-color-primary: var(--color-primary, #4285f4);
+	--nc-color-primary-default: var(--color-primary-default, #4285f4);
 	--nc-color-primary-text: var(--color-primary-text, #ffffff);
-	--nc-color-primary-hover: var(--color-primary-hover, #1557b0);
+	--nc-color-primary-hover: var(--color-primary-hover, #5a95f5);
 	--nc-color-primary-light: var(--color-primary-light, #e8f0fe);
-	--nc-color-primary-light-text: var(--color-primary-light-text, #1a73e8);
+	--nc-color-primary-light-text: var(--color-primary-light-text, #4285f4);
 	--nc-color-primary-light-hover: var(--color-primary-light-hover, #d2e3fc);
-	--nc-color-primary-text-dark: var(--color-primary-text-dark, #f8f9fa);
-	--nc-color-primary-element: var(--color-primary-element, #1a73e8);
+	--nc-color-primary-text-dark: var(--color-primary-text-dark, #202124);
+	--nc-color-primary-element: var(--color-primary-element, #4285f4);
 	--nc-color-primary-element-text: var(--color-primary-element-text, #ffffff);
-	--nc-color-primary-element-hover: var(--color-primary-element-hover, #1557b0);
+	--nc-color-primary-element-hover: var(--color-primary-element-hover, #5a95f5);
 	--nc-color-primary-element-light: var(--color-primary-element-light, #e8f0fe);
-	--nc-color-primary-element-light-text: var(--color-primary-element-light-text, #1a73e8);
+	--nc-color-primary-element-light-text: var(--color-primary-element-light-text, #4285f4);
 	--nc-color-primary-element-light-hover: var(--color-primary-element-light-hover, #d2e3fc);
-	--nc-color-primary-element-text-dark: var(--color-primary-element-text-dark, #f8f9fa);
+	--nc-color-primary-element-text-dark: var(--color-primary-element-text-dark, #202124);
 }
 
 /* Dark mode with ForwardEmail colors */
@@ -355,6 +355,17 @@
 }
 
 /* #endregion */
+
+/* Light mode sidebar background override */
+:not([data-themes~="dark"]) #rl-app #rl-left {
+	background-color: #fbfbfb;
+}
+
+@media (prefers-color-scheme: dark) {
+	:not([data-themes~="light"]) #rl-app #rl-left {
+		background-color: var(--nc-color-main-background-blur, var(--nc-color-main-background));
+	}
+}
 
 /*
  * Icons
@@ -1513,6 +1524,18 @@ html.rl-left-panel-disabled #rl-app .b-folders .b-toolbar {
 	max-width: 100%;
 	font-weight: bold;
 	box-sizing: content-box !important;
+}
+
+/* Light mode: Use primary blue for compose button */
+:not([data-themes~="dark"]) #rl-app .b-folders .b-toolbar .btn.buttonCompose {
+	background-color: var(--nc-color-primary) !important;
+	border-color: var(--nc-color-primary) !important;
+}
+
+:not([data-themes~="dark"]) #rl-app .b-folders .b-toolbar .btn.buttonCompose:hover,
+:not([data-themes~="dark"]) #rl-app .b-folders .b-toolbar .btn.buttonCompose:focus {
+	background-color: var(--nc-color-primary-hover) !important;
+	border-color: var(--nc-color-primary-hover) !important;
 }
 
 #rl-app .b-folders .b-toolbar .btn.buttonContacts {

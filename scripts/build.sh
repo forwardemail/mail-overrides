@@ -17,15 +17,11 @@ echo ""
 cd "$ROOT_DIR"
 
 # Determine version to use
-# 1. Check for SNAPPYMAIL_VERSION environment variable (Ansible can set this)
-# 2. Check for FORWARDEMAIL_VERSION environment variable (alternative)
-# 3. Default to 0.0.0 (local Docker development)
-if [ -n "$SNAPPYMAIL_VERSION" ]; then
-    VERSION="$SNAPPYMAIL_VERSION"
-    echo "→ Using version from SNAPPYMAIL_VERSION env: $VERSION"
-elif [ -n "$FORWARDEMAIL_VERSION" ]; then
-    VERSION="$FORWARDEMAIL_VERSION"
-    echo "→ Using version from FORWARDEMAIL_VERSION env: $VERSION"
+# 1. Check for APP_VERSION environment variable (matches SnappyMail convention)
+# 2. Default to 0.0.0 (local Docker development)
+if [ -n "$APP_VERSION" ]; then
+    VERSION="$APP_VERSION"
+    echo "→ Using version from APP_VERSION env: $VERSION"
 else
     VERSION="0.0.0"
     echo "→ Using default development version: $VERSION"
