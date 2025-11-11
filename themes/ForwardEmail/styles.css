@@ -1474,6 +1474,19 @@ html.rl-mobile.rl-left-panel-disabled #rl-app #rl-left {
 	display: none;
 }
 
+/* Light mode: Make loading screen text white */
+:not([data-themes~="dark"]) #rl-app #rl-loading,
+:not([data-themes~="dark"]) #rl-app #rl-loading-desc {
+	color: #ffffff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+	:not([data-themes~="light"]) #rl-app #rl-loading,
+	:not([data-themes~="light"]) #rl-app #rl-loading-desc {
+		color: var(--nc-color-main-text);
+	}
+}
+
 /* #endregion */
 
 /* #region side panel */
