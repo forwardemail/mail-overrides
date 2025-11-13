@@ -81,7 +81,7 @@ redis-cli -h 127.0.0.1 -p 6379 ping
 await fetch('?/Json/&q[]=/0/', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ Action: 'RedisTestConnection' })
+  body: JSON.stringify({ Action: 'PluginRedisTestConnection' })
 }).then(r => r.json()).then(console.log);
 // Expected: {Result: {success: true, message: "Redis connection successful"}}
 ```

@@ -4,7 +4,7 @@
         "port": 6379,
         "use_tls": false,
         "password": "",
-        "ttl_seconds": 14400,
+        "ttl_seconds": 604800,
         "key_mask_secret": "Km6r5CGwdfYzY9qsJh0k1OtS8r8wzDlG4+3czYQeWBI="
     }
 }

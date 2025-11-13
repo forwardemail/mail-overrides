@@ -118,23 +118,34 @@ class RedisHelper
 	public static function setSession(string $alias, array $blob) : bool
 	{
 		try {
+			error_log('[RedisHelper] setSession called for alias: ' . $alias);
+
 			$redis = self::connect();
 			if ($redis === null) {
+				error_log('[RedisHelper] setSession: Redis connection is null');
 				return false;
 			}
 
+			error_log('[RedisHelper] setSession: Redis connected, generating key');
 			$key = self::makeKey($alias);
 			$ttl = (int) (self::$config['ttl_seconds'] ?? 14400);
+
+			error_log('[RedisHelper] setSession: Key=' . $key . ', TTL=' . $ttl);
 
 			// Add server timestamp
 			$blob['server_timestamp'] = time();
 
 			// Store as JSON with TTL
-			$result = $redis->setex($key, $ttl, json_encode($blob));
+			error_log('[RedisHelper] setSession: Encoding blob to JSON');
+			$jsonBlob = json_encode($blob);
+			error_log('[RedisHelper] setSession: Calling SETEX');
+			$result = $redis->setex($key, $ttl, $jsonBlob);
+
+			error_log('[RedisHelper] setSession: SETEX result=' . json_encode($result));
 
 			return $result === true || $result == 'OK';
 		} catch (\Throwable $e) {
-			error_log('RedisHelper::setSession error: ' . $e->getMessage());
+			error_log('[RedisHelper] setSession error: ' . $e->getMessage() . "\nStack: " . $e->getTraceAsString());
 			return false;
 		}
 	}

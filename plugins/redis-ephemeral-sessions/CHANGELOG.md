@@ -5,6 +5,12 @@ All notable changes to the Redis Ephemeral Sessions plugin will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-11
+
+### Changed
+- Bumped plugin version so SnappyMail cache invalidates and new JS bundle (with `Plugin` JSON actions) loads reliably.
+- Documented the updated test command for the JSON action prefix.
+
 ## [1.0.0] - 2025-10-27
 
 ### Added
@@ -51,4 +57,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.1]: https://github.com/forwardemail/snappymail-redis-sessions/releases/tag/v1.0.1
 [1.0.0]: https://github.com/forwardemail/snappymail-redis-sessions/releases/tag/v1.0.0

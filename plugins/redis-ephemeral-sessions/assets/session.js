@@ -26,6 +26,35 @@
 			this.initSecret();
 		}
 
+		getAppToken() {
+			try {
+				return (window.rl && window.rl.settings && window.rl.settings.app
+					? window.rl.settings.app('token')
+					: '') || '';
+			} catch (error) {
+				console.warn('[RedisEphemeralSession] Failed to read app token', error);
+				return '';
+			}
+		}
+
+		async jsonRequest(action, payload = {}) {
+			const token = this.getAppToken();
+			const response = await fetch('?/Json/&q[]=/0/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Client-Token': token
+				},
+				body: JSON.stringify({
+					Action: `Plugin${action}`,
+					XToken: token,
+					...payload
+				})
+			});
+
+			return response.json();
+		}
+
 		/**
 		 * Initialize or retrieve ephemeral secret from sessionStorage
 		 */
@@ -197,22 +226,13 @@
 				const encrypted = await this.encryptPayload(secret, payload);
 
 				// Send to server
-				const response = await fetch('?/Json/&q[]=/0/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						Action: 'RedisSessionCreate',
-						alias: alias,
-						ciphertext: encrypted.ciphertext,
-						iv: encrypted.iv,
-						salt: encrypted.salt,
-						meta: payload.meta
-					})
+				const result = await this.jsonRequest('RedisSessionCreate', {
+					alias: alias,
+					ciphertext: encrypted.ciphertext,
+					iv: encrypted.iv,
+					salt: encrypted.salt,
+					meta: payload.meta
 				});
-
-				const result = await response.json();
 
 				if (result && result.Result && result.Result.success) {
 					console.log('[RedisEphemeralSession] Session stored successfully');
@@ -237,18 +257,9 @@
 				const secret = this.getSecret();
 
 				// Fetch from server
-				const response = await fetch('?/Json/&q[]=/0/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						Action: 'RedisSessionGet',
-						alias: alias
-					})
+				const result = await this.jsonRequest('RedisSessionGet', {
+					alias: alias
 				});
-
-				const result = await response.json();
 
 				if (!result || !result.Result || !result.Result.success) {
 					throw new Error(result.Result?.error || 'Session not found');
@@ -280,18 +291,9 @@
 		 */
 		async deleteSession(alias) {
 			try {
-				const response = await fetch('?/Json/&q[]=/0/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						Action: 'RedisSessionDelete',
-						alias: alias
-					})
+				const result = await this.jsonRequest('RedisSessionDelete', {
+					alias: alias
 				});
-
-				const result = await response.json();
 
 				if (result && result.Result && result.Result.success) {
 					console.log('[RedisEphemeralSession] Session deleted');
@@ -312,18 +314,9 @@
 		 */
 		async refreshSession(alias) {
 			try {
-				const response = await fetch('?/Json/&q[]=/0/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						Action: 'RedisSessionRefresh',
-						alias: alias
-					})
+				const result = await this.jsonRequest('RedisSessionRefresh', {
+					alias: alias
 				});
-
-				const result = await response.json();
 
 				if (result && result.Result && result.Result.success) {
 					console.log('[RedisEphemeralSession] Session refreshed');
@@ -344,18 +337,9 @@
 		 */
 		async getSessionStatus(alias) {
 			try {
-				const response = await fetch('?/Json/&q[]=/0/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						Action: 'RedisSessionStatus',
-						alias: alias
-					})
+				const result = await this.jsonRequest('RedisSessionStatus', {
+					alias: alias
 				});
-
-				const result = await response.json();
 				return result.Result || {};
 			} catch (error) {
 				console.error('[RedisEphemeralSession] Get status error:', error);

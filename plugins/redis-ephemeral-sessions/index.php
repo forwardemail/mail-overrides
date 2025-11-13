@@ -19,8 +19,8 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 {
 	const
 		NAME = 'Redis Ephemeral Sessions',
-		VERSION = '1.0.0',
-		RELEASE = '2025-10-27',
+		VERSION = '1.0.1',
+		RELEASE = '2025-11-11',
 		REQUIRED = '2.36.0',
 		CATEGORY = 'Session',
 		DESCRIPTION = 'Secure ephemeral session storage using Redis with client-side encryption';
@@ -30,6 +30,17 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 */
 	public function Init() : void
 	{
+		error_log('[RedisEphemeralSessions] Init() called');
+
+		// Log to SnappyMail logger too
+		if ($this->Manager() && $this->Manager()->Actions() && $this->Manager()->Actions()->Logger()) {
+			$this->Manager()->Actions()->Logger()->Write(
+				'RedisEphemeralSessions plugin Init() starting',
+				\LOG_INFO,
+				'REDIS-SESSION'
+			);
+		}
+
 		// Register autoloader for plugin classes
 		spl_autoload_register(function($sClassName) {
 			if (strpos($sClassName, 'RedisEphemeralSessions\\') === 0) {
@@ -40,12 +51,16 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 			}
 		});
 
+		error_log('[RedisEphemeralSessions] Checking for Predis...');
+
 		// Check if Predis is available
 		if (!class_exists('Predis\Client')) {
+			error_log('[RedisEphemeralSessions] Predis not found, attempting autoload');
 			$this->attemptPredisAutoload();
 		}
 
 		if (!class_exists('Predis\Client')) {
+			error_log('[RedisEphemeralSessions] Predis still not found after autoload attempt');
 			if ($this->Manager()->Actions()->Logger()) {
 				$this->Manager()->Actions()->Logger()->Write(
 					'Redis Ephemeral Sessions: Predis library not found, plugin disabled',
@@ -56,6 +71,8 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 			return;
 		}
 
+		error_log('[RedisEphemeralSessions] Predis found! Registering hooks...');
+
 		// Add client-side JavaScript
 		$this->addJs('assets/session.js');
 
@@ -64,12 +81,15 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 		$this->addHook('filter.app-data', 'FilterAppData');
 
 		// Register JSON API endpoints
-		$this->addJsonHook('RedisSessionCreate', 'DoCreateSession');
-		$this->addJsonHook('RedisSessionGet', 'DoGetSession');
-		$this->addJsonHook('RedisSessionDelete', 'DoDeleteSession');
-		$this->addJsonHook('RedisSessionRefresh', 'DoRefreshSession');
-		$this->addJsonHook('RedisSessionStatus', 'DoSessionStatus');
-		$this->addJsonHook('RedisTestConnection', 'DoTestConnection');
+		// JavaScript sends "PluginRedisSessionCreate" which SnappyMail converts to "DoPluginRedisSessionCreate"
+		$this->addJsonHook('RedisSessionCreate', 'DoRedisSessionCreate');
+		$this->addJsonHook('RedisSessionGet', 'DoRedisSessionGet');
+		$this->addJsonHook('RedisSessionDelete', 'DoRedisSessionDelete');
+		$this->addJsonHook('RedisSessionRefresh', 'DoRedisSessionRefresh');
+		$this->addJsonHook('RedisSessionStatus', 'DoRedisSessionStatus');
+		$this->addJsonHook('RedisTestConnection', 'DoRedisTestConnection');
+
+		error_log('[RedisEphemeralSessions] Init() complete, hooks registered');
 	}
 
 	/**
@@ -169,10 +189,31 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 			'host' => $this->Config()->Get('plugin', 'host', '127.0.0.1'),
 			'port' => (int) $this->Config()->Get('plugin', 'port', 6379),
 			'use_tls' => (bool) $this->Config()->Get('plugin', 'use_tls', false),
-			'password' => $this->Config()->getDecrypted('plugin', 'password', ''),
+			'password' => $this->getSecretValue('password'),
 			'ttl_seconds' => (int) $this->Config()->Get('plugin', 'ttl_seconds', 14400),
-			'key_mask_secret' => $this->Config()->getDecrypted('plugin', 'key_mask_secret', '')
+			'key_mask_secret' => $this->getSecretValue('key_mask_secret')
 		];
+	}
+
+	/**
+	 * Retrieve encrypted config values with fallback for plain strings
+	 */
+	private function getSecretValue(string $name) : string
+	{
+		$decrypted = $this->Config()->getDecrypted('plugin', $name, '');
+		if (!empty($decrypted)) {
+			return $decrypted;
+		}
+
+		$raw = $this->Config()->Get('plugin', $name, '');
+		$trimmed = \ltrim((string) $raw);
+
+		// Allow plain secrets when seeding config files (non-JSON value)
+		if (!empty($trimmed) && \strlen($trimmed) && \substr($trimmed, 0, 1) !== '[') {
+			return $trimmed;
+		}
+
+		return '';
 	}
 
 	/**
@@ -220,9 +261,20 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoCreateSession() : array
+	public function DoRedisSessionCreate() : array
 	{
+		$this->Manager()->Actions()->Logger()->Write(
+			'DoCreateSession: Method called',
+			\LOG_INFO,
+			'REDIS-SESSION'
+		);
+
 		try {
+			$this->Manager()->Actions()->Logger()->Write(
+				'DoCreateSession: Initializing Redis helper',
+				\LOG_INFO,
+				'REDIS-SESSION'
+			);
 			$this->initRedisHelper();
 
 			$alias = $this->jsonParam('alias', '');
@@ -230,6 +282,12 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 			$iv = $this->jsonParam('iv', '');
 			$salt = $this->jsonParam('salt', '');
 			$meta = $this->jsonParam('meta', []);
+
+			$this->Manager()->Actions()->Logger()->Write(
+				'DoCreateSession: Parameters - alias=' . $alias . ', ciphertext_len=' . strlen($ciphertext),
+				\LOG_INFO,
+				'REDIS-SESSION'
+			);
 
 			// Validate required parameters
 			if (empty($alias) || empty($ciphertext) || empty($iv) || empty($salt)) {
@@ -245,8 +303,20 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 				'timestamp' => time()
 			];
 
+			$this->Manager()->Actions()->Logger()->Write(
+				'DoCreateSession: Calling RedisHelper::setSession',
+				\LOG_INFO,
+				'REDIS-SESSION'
+			);
+
 			// Store in Redis
 			$success = \RedisEphemeralSessions\RedisHelper::setSession($alias, $blob);
+
+			$this->Manager()->Actions()->Logger()->Write(
+				'DoCreateSession: RedisHelper::setSession returned ' . ($success ? 'true' : 'false'),
+				\LOG_INFO,
+				'REDIS-SESSION'
+			);
 
 			if (!$success) {
 				throw new \Exception('Failed to store session in Redis');
@@ -259,7 +329,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 		} catch (\Throwable $e) {
 			$this->Manager()->Actions()->Logger()->Write(
-				'Redis Session Create Error: ' . $e->getMessage(),
+				'Redis Session Create Error: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine(),
 				\LOG_ERR,
 				'REDIS-SESSION'
 			);
@@ -276,7 +346,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoGetSession() : array
+	public function DoRedisSessionGet() : array
 	{
 		try {
 			$this->initRedisHelper();
@@ -320,7 +390,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoDeleteSession() : array
+	public function DoRedisSessionDelete() : array
 	{
 		try {
 			$this->initRedisHelper();
@@ -356,7 +426,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoRefreshSession() : array
+	public function DoRedisSessionRefresh() : array
 	{
 		try {
 			$this->initRedisHelper();
@@ -387,7 +457,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoSessionStatus() : array
+	public function DoRedisSessionStatus() : array
 	{
 		try {
 			$this->initRedisHelper();
@@ -427,7 +497,7 @@ class RedisEphemeralSessionsPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 *
 	 * @return array JSON response
 	 */
-	public function DoTestConnection() : array
+	public function DoRedisTestConnection() : array
 	{
 		try {
 			$this->initRedisHelper();
