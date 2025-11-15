@@ -19,12 +19,18 @@ cd "$ROOT_DIR"
 # Determine version to use
 # 1. Check for APP_VERSION environment variable (matches SnappyMail convention)
 # 2. Default to 0.0.0 (local Docker development)
+echo "→ Environment check:"
+echo "  APP_VERSION env var: ${APP_VERSION:-<not set>}"
+echo "  Current user: $(whoami)"
+echo "  Working directory: $(pwd)"
+
 if [ -n "$APP_VERSION" ]; then
     VERSION="$APP_VERSION"
     echo "→ Using version from APP_VERSION env: $VERSION"
 else
     VERSION="0.0.0"
     echo "→ Using default development version: $VERSION"
+    echo "  ⚠ WARNING: APP_VERSION not set, defaulting to 0.0.0"
 fi
 
 # Check if mail submodule exists
@@ -84,9 +90,14 @@ if [ -n "$PHP_BIN" ]; then
 file_put_contents('dist/index.php', \$content);
 "
     echo "  ✓ Version set to $VERSION, production mode forced"
+
+    # Verify the patch was applied
+    PATCHED_VERSION=$(grep "define('APP_VERSION'" dist/index.php | grep -oP "'[0-9]+\.[0-9]+\.[0-9]+'")
+    echo "  ✓ Verified: dist/index.php APP_VERSION = $PATCHED_VERSION"
 else
     echo "  ⚠ PHP CLI not found; skipping version/production mode patch."
     echo "    Install PHP or set PHP_BIN to enable versioning and production mode."
+    echo "  This means APP_VERSION will remain as 0.0.0 in index.php!"
 fi
 
 # Set up versioned directory structure

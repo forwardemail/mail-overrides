@@ -20,11 +20,29 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 	public function Init() : void
 	{
+		// Log that plugin is being initialized
+		$oLogger = $this->Manager()->Actions()->Logger();
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Initializing plugin version ' . self::VERSION,
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+
 		// Add custom login template
 		$this->addTemplate('templates/Views/User/Login.html');
 
 		// Hook into login.success to auto-configure CardDAV
 		$this->addHook('login.success', 'OnLoginSuccess');
+
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Hooked into login.success',
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
 	}
 
 	/**
