@@ -172,19 +172,20 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 		$oLogger = $oActions->Logger();
 
 		// Get the user's email and password from the account
+		// Note: ImapPass() returns a string (calls getValue() on the SensitiveString internally)
 		$sEmail = $oAccount->Email();
 		$sPassword = $oAccount->ImapPass();
 
 		if ($oLogger) {
 			$oLogger->Write(
-				'Forward Email Plugin: Configuring CardDAV for ' . $sEmail . ', password type: ' . \gettype($sPassword) . ', class: ' . (\is_object($sPassword) ? \get_class($sPassword) : 'N/A'),
+				'Forward Email Plugin: Configuring CardDAV for ' . $sEmail,
 				\LOG_INFO,
 				'PLUGIN'
 			);
 		}
 
-		if (!$sPassword || !($sPassword instanceof \SnappyMail\SensitiveString)) {
-			throw new \Exception('Cannot access user password for CardDAV setup - invalid password object');
+		if (empty($sPassword)) {
+			throw new \Exception('Cannot access user password for CardDAV setup - password is empty');
 		}
 
 		// Get CardDAV URL from config
@@ -202,7 +203,7 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 		$aData = [
 			'Mode' => 1, // Read/write mode
 			'User' => $sEmail,
-			'Password' => $sPassword->getValue(),
+			'Password' => $sPassword,
 			'Url' => $sCardDAVUrl
 		];
 
