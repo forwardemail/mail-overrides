@@ -85,6 +85,8 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			if ($this->Config()->Get('plugin', 'auto_enable_contacts_autosave', true)) {
 				$this->ensureContactsAutosave($oAccount);
 			}
+
+			$this->ensureSecurityDefaults($oAccount);
 		} catch (\Throwable $oException) {
 			// Log error but don't fail login
 			if ($oActions->Logger()) {
@@ -208,6 +210,37 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			}
 		} catch (\Throwable $oException) {
 			// Silently fail - this is not critical
+		}
+	}
+
+	/**
+	 * Ensure security-related defaults (auto logout & key passphrase cache)
+	 */
+	private function ensureSecurityDefaults(\RainLoop\Model\Account $oAccount) : void
+	{
+		try {
+			$oSettings = $this->Manager()->Actions()->SettingsProvider()->Load($oAccount);
+			if (!$oSettings) {
+				return;
+			}
+
+			$bChanged = false;
+
+			if ((int) $oSettings->GetConf('AutoLogout', 30) !== 0) {
+				$oSettings->SetConf('AutoLogout', 0);
+				$bChanged = true;
+			}
+
+			if ((int) $oSettings->GetConf('keyPassForget', 15) !== 0) {
+				$oSettings->SetConf('keyPassForget', 0);
+				$bChanged = true;
+			}
+
+			if ($bChanged) {
+				$oSettings->save();
+			}
+		} catch (\Throwable $oException) {
+			// Do not interrupt login flow
 		}
 	}
 }
