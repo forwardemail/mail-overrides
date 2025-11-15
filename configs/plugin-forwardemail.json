@@ -1,0 +1,5 @@
+{
+  "enable_carddav_auto_setup": true,
+  "carddav_url": "https://carddav.forwardemail.net",
+  "auto_enable_contacts_autosave": true
+}

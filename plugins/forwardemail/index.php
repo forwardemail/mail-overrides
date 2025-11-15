@@ -61,14 +61,41 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 	 */
 	public function OnLoginSuccess(\RainLoop\Model\Account $oAccount) : void
 	{
+		$oActions = $this->Manager()->Actions();
+		$oLogger = $oActions->Logger();
+
+		// Log plugin execution start
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: OnLoginSuccess triggered for ' . $oAccount->Email(),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+
 		// Check if auto-setup is enabled
-		if (!$this->Config()->Get('plugin', 'enable_carddav_auto_setup', true)) {
+		$bCardDAVEnabled = $this->Config()->Get('plugin', 'enable_carddav_auto_setup', true);
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: CardDAV auto-setup enabled: ' . ($bCardDAVEnabled ? 'YES' : 'NO'),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+		if (!$bCardDAVEnabled) {
 			return;
 		}
 
 		// Check if contacts sync is enabled globally
-		$oActions = $this->Manager()->Actions();
-		if (!$oActions->Config()->Get('contacts', 'allow_sync', false)) {
+		$bSyncAllowed = $oActions->Config()->Get('contacts', 'allow_sync', false);
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Global contacts sync allowed: ' . ($bSyncAllowed ? 'YES' : 'NO'),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+		if (!$bSyncAllowed) {
 			return;
 		}
 
@@ -76,8 +103,23 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			// Check if CardDAV is already configured
 			$aExistingSync = $this->getContactsSyncData($oAccount);
 
+			if ($oLogger) {
+				$oLogger->Write(
+					'Forward Email Plugin: Existing CardDAV config: ' . ($aExistingSync ? 'FOUND (URL: ' . ($aExistingSync['Url'] ?? 'none') . ')' : 'NOT FOUND'),
+					\LOG_INFO,
+					'PLUGIN'
+				);
+			}
+
 			if (!$aExistingSync || empty($aExistingSync['Url'])) {
 				// CardDAV not configured - auto-configure it now
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Attempting to auto-configure CardDAV',
+						\LOG_INFO,
+						'PLUGIN'
+					);
+				}
 				$this->autoConfigureCardDAV($oAccount);
 			}
 
@@ -87,11 +129,12 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			}
 
 			$this->ensureSecurityDefaults($oAccount);
+			$this->ensureCheckMailInterval($oAccount);
 		} catch (\Throwable $oException) {
 			// Log error but don't fail login
-			if ($oActions->Logger()) {
-				$oActions->Logger()->Write(
-					'Forward Email Plugin: Failed to auto-configure CardDAV: ' . $oException->getMessage(),
+			if ($oLogger) {
+				$oLogger->Write(
+					'Forward Email Plugin: Error - ' . $oException->getMessage() . ' in ' . $oException->getFile() . ':' . $oException->getLine(),
 					\LOG_WARNING,
 					'PLUGIN'
 				);
@@ -108,17 +151,34 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 	private function autoConfigureCardDAV(\RainLoop\Model\Account $oAccount) : void
 	{
 		$oActions = $this->Manager()->Actions();
+		$oLogger = $oActions->Logger();
 
 		// Get the user's email and password from the account
 		$sEmail = $oAccount->Email();
 		$sPassword = $oAccount->ImapPass();
 
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Configuring CardDAV for ' . $sEmail . ', password type: ' . \gettype($sPassword) . ', class: ' . (\is_object($sPassword) ? \get_class($sPassword) : 'N/A'),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+
 		if (!$sPassword || !($sPassword instanceof \SnappyMail\SensitiveString)) {
-			throw new \Exception('Cannot access user password for CardDAV setup');
+			throw new \Exception('Cannot access user password for CardDAV setup - invalid password object');
 		}
 
 		// Get CardDAV URL from config
 		$sCardDAVUrl = $this->Config()->Get('plugin', 'carddav_url', 'https://carddav.forwardemail.net');
+
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Using CardDAV URL: ' . $sCardDAVUrl,
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
 
 		// Prepare CardDAV sync data
 		$aData = [
@@ -131,10 +191,10 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 		// Save CardDAV configuration
 		$bResult = $this->setContactsSyncData($oAccount, $aData);
 
-		if ($bResult && $oActions->Logger()) {
-			$oActions->Logger()->Write(
-				'Forward Email Plugin: CardDAV auto-configured for ' . $sEmail,
-				\LOG_INFO,
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: CardDAV configuration ' . ($bResult ? 'SUCCEEDED' : 'FAILED') . ' for ' . $sEmail,
+				$bResult ? \LOG_INFO : \LOG_WARNING,
 				'PLUGIN'
 			);
 		}
@@ -215,32 +275,129 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 	/**
 	 * Ensure security-related defaults (auto logout & key passphrase cache)
+	 * Always enforces these values to override SnappyMail hardcoded defaults
 	 */
 	private function ensureSecurityDefaults(\RainLoop\Model\Account $oAccount) : void
 	{
 		try {
-			$oSettings = $this->Manager()->Actions()->SettingsProvider()->Load($oAccount);
+			$oActions = $this->Manager()->Actions();
+			$oSettings = $oActions->SettingsProvider()->Load($oAccount);
 			if (!$oSettings) {
 				return;
 			}
 
 			$bChanged = false;
 
-			if ((int) $oSettings->GetConf('AutoLogout', 30) !== 0) {
-				$oSettings->SetConf('AutoLogout', 0);
+			// Get default values from application.ini
+			$oConfig = $oActions->Config();
+			$iDefaultAutoLogout = (int) $oConfig->Get('defaults', 'autologout', 0);
+			$iDefaultKeyPassForget = (int) $oConfig->Get('defaults', 'key_pass_forget', 0);
+
+			$oLogger = $oActions->Logger();
+
+			// Check and update AutoLogout
+			// NOTE: GetConf will return stored value or null if not set, so we check explicitly
+			$currentAutoLogout = $oSettings->GetConf('AutoLogout', null);
+			if ($currentAutoLogout === null || (int)$currentAutoLogout !== $iDefaultAutoLogout) {
+				$oSettings->SetConf('AutoLogout', $iDefaultAutoLogout);
 				$bChanged = true;
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Set AutoLogout from ' . ($currentAutoLogout ?? 'unset') . ' to ' . $iDefaultAutoLogout,
+						\LOG_INFO,
+						'PLUGIN'
+					);
+				}
 			}
 
-			if ((int) $oSettings->GetConf('keyPassForget', 15) !== 0) {
-				$oSettings->SetConf('keyPassForget', 0);
+			// Check and update keyPassForget
+			// This is especially important because SnappyMail hardcodes this to 15 in Actions.php:611
+			$currentKeyPassForget = $oSettings->GetConf('keyPassForget', null);
+			if ($currentKeyPassForget === null || (int)$currentKeyPassForget !== $iDefaultKeyPassForget) {
+				$oSettings->SetConf('keyPassForget', $iDefaultKeyPassForget);
 				$bChanged = true;
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Set keyPassForget from ' . ($currentKeyPassForget ?? 'unset') . ' to ' . $iDefaultKeyPassForget,
+						\LOG_INFO,
+						'PLUGIN'
+					);
+				}
 			}
 
 			if ($bChanged) {
-				$oSettings->save();
+				$bSaved = $oSettings->save();
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Security defaults save ' . ($bSaved ? 'SUCCEEDED' : 'FAILED'),
+						$bSaved ? \LOG_INFO : \LOG_WARNING,
+						'PLUGIN'
+					);
+				}
 			}
 		} catch (\Throwable $oException) {
 			// Do not interrupt login flow
+			if ($oActions && $oActions->Logger()) {
+				$oActions->Logger()->Write(
+					'Forward Email Plugin: ensureSecurityDefaults error - ' . $oException->getMessage(),
+					\LOG_WARNING,
+					'PLUGIN'
+				);
+			}
+		}
+	}
+
+	/**
+	 * Ensure check mail interval is set to default_refresh_interval from config
+	 * This overrides SnappyMail's hardcoded default of 15 minutes
+	 */
+	private function ensureCheckMailInterval(\RainLoop\Model\Account $oAccount) : void
+	{
+		try {
+			$oActions = $this->Manager()->Actions();
+			$oConfig = $oActions->Config();
+
+			// Get the default refresh interval from application.ini
+			// This is in webmail.default_refresh_interval (in minutes)
+			$iDefaultInterval = (int) $oConfig->Get('webmail', 'default_refresh_interval', 1);
+			$iMinInterval = (int) $oConfig->Get('webmail', 'min_refresh_interval', 1);
+
+			// Ensure we respect the minimum
+			$iDesiredInterval = \max($iDefaultInterval, $iMinInterval);
+
+			// Load the account-specific settings (not global settings)
+			$oSettings = $oActions->SettingsProvider(true)->Load($oAccount);
+			if (!$oSettings) {
+				return;
+			}
+
+			$oLogger = $oActions->Logger();
+
+			// Check current value
+			$iCurrentInterval = (int) $oSettings->GetConf('CheckMailInterval', null);
+
+			// Only update if not set or different from desired
+			if ($iCurrentInterval === null || $iCurrentInterval !== $iDesiredInterval) {
+				$oSettings->SetConf('CheckMailInterval', $iDesiredInterval);
+				$bSaved = $oSettings->save();
+
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Set CheckMailInterval from ' . ($iCurrentInterval ?? 'unset') . ' to ' . $iDesiredInterval . ' minutes (' . ($bSaved ? 'SUCCEEDED' : 'FAILED') . ')',
+						$bSaved ? \LOG_INFO : \LOG_WARNING,
+						'PLUGIN'
+					);
+				}
+			}
+		} catch (\Throwable $oException) {
+			// Do not interrupt login flow
+			if ($oActions && $oActions->Logger()) {
+				$oActions->Logger()->Write(
+					'Forward Email Plugin: ensureCheckMailInterval error - ' . $oException->getMessage(),
+					\LOG_WARNING,
+					'PLUGIN'
+				);
+			}
 		}
 	}
 }
