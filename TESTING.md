@@ -148,6 +148,18 @@ docker exec -it snappymail-redis-dev redis-cli KEYS "snappymail:v1:session:*"
 docker exec -it snappymail-redis-dev redis-cli --scan --pattern "snappymail:v1:session:*" | wc -l
 ```
 
+# Resetting Runtime Data in Docker
+
+The `snappymail-dev-data` volume under `/var/www/html/data` persists SnappyMail’s runtime state (config copies, contacts, sessions). If you need a clean slate (e.g., to reapply defaults or reset CardDAV), run:
+
+```bash
+docker-compose -f docker/docker-compose.yml down
+docker volume rm snappymail-dev-data
+docker-compose -f docker/docker-compose.yml up --build
+```
+
+This removes the runtime `configs/` and `storage/` copies so SnappyMail re-seeds them from `dist/` on the next start.
+
 ### 8. View Logs
 
 **SnappyMail Logs:**

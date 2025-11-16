@@ -74,6 +74,20 @@ chmod +x scripts/*.sh
 
 This creates `dist/` with SnappyMail + Forward Email customizations.
 
+### Runtime Data vs. Seed Files
+
+SnappyMail copies the files in `dist/data/_data_/_default_/configs/` into its writable data directory the **first** time it runs. After that, those runtime copies are treated as mutable state (the admin UI rewrites `plugins.ini`, per-user settings live under `dist/data/_data_/_default_/storage/<domain>/<localPart>/settings/`, etc.). Editing the git versions later will not change an existing deployment.
+
+Common tasks:
+
+| Goal | Runtime file(s) | Notes |
+|------|-----------------|-------|
+| Change global defaults (refresh interval, autologout, contacts) | `dist/data/_data_/_default_/configs/application.ini` | Delete a user’s `storage/<domain>/<localPart>/settings/settings.ini` if you want them to pick up new defaults. |
+| Enable/disable plugins | `dist/data/_data_/_default_/configs/plugins.ini` | Toggling via the SnappyMail admin UI edits this file. |
+| Reset plugin-specific config | `dist/data/_data_/_default_/configs/plugin-*.json` | Copy-once: edit the runtime version or remove it before restarting. |
+
+When in doubt, inspect the files under `dist/data/_data_/_default_/…` on the target host (or Docker volume). Treat the copies in git as templates for *new* environments.
+
 ### 4. Test Locally
 
 **Option A: Docker (Recommended)**
@@ -164,6 +178,16 @@ cd dist && php -S localhost:8000
 git push
 ```
 
+### Forward Email Plugin Behavior
+
+The `plugins/forwardemail` package enforces several defaults at login:
+
+- CardDAV auto-setup (URL configurable via `plugin-forwardemail.json`). If `contacts_sync` already exists, delete `dist/data/_data_/_default_/storage/<domain>/<localPart>/configs/contacts_sync` to regenerate it.
+- `ContactsAutosave = true`, `AutoLogout = 0`, and `keyPassForget = 0` to keep sessions available until explicit logout.
+- Safe retry logic if CardDAV credentials are missing.
+
+To force a user to pick up new defaults, delete their `settings/settings.ini` (and `settings_local/settings.ini` if present) under `dist/data/_data_/_default_/storage/<domain>/<localPart>/` and have them log in again.
+
 ## Production Deployment
 
 Production deployment is managed by Ansible from the main [forwardemail.net](https://github.com/forwardemail/forwardemail.net) monorepo.
@@ -243,22 +267,12 @@ Helper to update the `mail/` submodule to a specific SnappyMail version.
 
 ## Troubleshooting
 
-### Submodule not initialized
-```bash
-git submodule update --init --recursive
-```
-
-### Customizations not appearing
-```bash
-./scripts/build.sh
-ls -la mail/snappymail/v/0.0.0/plugins/forwardemail/
-```
-
-### Update mail submodule
-```bash
-cd mail && git pull && cd ..
-git add mail && git commit -m "Update mail submodule"
-```
+- **Submodule missing** → run `git submodule update --init --recursive`.
+- **New theme/plugin changes not showing** → run `./scripts/build.sh` and ensure you’re editing `plugins/` or `themes/`, not `mail/` or `dist/`.
+- **Plugin stays enabled/disabled unexpectedly** → SnappyMail manages `dist/data/_data_/_default_/configs/plugins.ini`. Edit that runtime file (or use the admin UI) rather than the git copy.
+- **Defaults (contacts, refresh interval, autologout) not updating** → delete `dist/data/_data_/_default_/storage/<domain>/<localPart>/settings/` (and `settings_local/`) so the account reloads from `application.ini`.
+- **CardDAV sync errors** → confirm the PHP-FPM pool loads the curl extension *and* `curl_exec` is not listed in `php_admin_value[disable_functions]`. Verify the CardDAV server responds to `PROPFIND /.well-known/carddav` with 207/301 and that each `.vcf` URL is reachable.
+- **Redis plugin still running** → disable it in the SnappyMail admin UI or edit the runtime `plugins.ini`, then clear `dist/data/_data_/_default_/cache`.
 
 ## Contributing
 
