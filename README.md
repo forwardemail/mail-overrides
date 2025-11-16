@@ -182,7 +182,7 @@ git push
 
 The `plugins/forwardemail` package enforces several defaults at login:
 
-- CardDAV auto-setup (URL configurable via `plugin-forwardemail.json`). If `contacts_sync` already exists, delete `dist/data/_data_/_default_/storage/<domain>/<localPart>/configs/contacts_sync` to regenerate it.
+- CardDAV auto-setup using a template URL (default: `https://carddav.forwardemail.net/dav/{email}/addressbooks/default/`). Placeholders `{email}`, `{local}`, `{domain}` are substituted with the literal values from the user’s address. If `contacts_sync` already exists, delete `dist/data/_data_/_default_/storage/<domain>/<localPart>/configs/contacts_sync` to regenerate it.
 - `ContactsAutosave = true`, `AutoLogout = 0`, and `keyPassForget = 0` to keep sessions available until explicit logout.
 - Safe retry logic if CardDAV credentials are missing.
 

@@ -58,10 +58,10 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 				->SetDefaultValue(true),
 
 			\RainLoop\Plugins\Property::NewInstance('carddav_url')
-				->SetLabel('CardDAV URL')
+				->SetLabel('CardDAV URL Template')
 				->SetType(\RainLoop\Enumerations\PluginPropertyType::STRING)
-				->SetDescription('CardDAV server URL')
-				->SetDefaultValue('https://carddav.forwardemail.net'),
+				->SetDescription('Use placeholders like {email}, {local}, {domain}, e.g. https://carddav.forwardemail.net/dav/{email}/addressbooks/default/')
+				->SetDefaultValue('https://carddav.forwardemail.net/dav/{email}/addressbooks/default/'),
 
 			\RainLoop\Plugins\Property::NewInstance('auto_enable_contacts_autosave')
 				->SetLabel('Auto-Enable Contact Autosave')
@@ -189,7 +189,7 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 		}
 
 		// Get CardDAV URL from config
-		$sCardDAVUrl = $this->Config()->Get('plugin', 'carddav_url', 'https://carddav.forwardemail.net');
+		$sCardDAVUrl = $this->buildCardDavUrl($sEmail);
 
 		if ($oLogger) {
 			$oLogger->Write(
@@ -418,5 +418,23 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 				);
 			}
 		}
+	}
+
+	/**
+	 * Build the CardDAV URL using the configured template.
+	 */
+	private function buildCardDavUrl(string $sEmail) : string
+	{
+		$sTemplate = $this->Config()->Get('plugin', 'carddav_url', 'https://carddav.forwardemail.net/dav/{email}/addressbooks/default/');
+		$sEmailLower = \trim($sEmail);
+		$aParts = \explode('@', $sEmailLower, 2);
+		$sLocal = $aParts[0] ?? $sEmailLower;
+		$sDomain = $aParts[1] ?? '';
+
+		return \strtr($sTemplate, [
+			'{email}' => $sEmailLower,
+			'{local}' => $sLocal,
+			'{domain}' => $sDomain,
+		]);
 	}
 }
