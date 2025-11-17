@@ -36,9 +36,12 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 		// Hook into login.success to auto-configure CardDAV
 		$this->addHook('login.success', 'OnLoginSuccess');
 
+		// Hook into json.action-pre-call to log test attempts
+		$this->addHook('json.action-pre-call', 'OnJsonActionPreCall');
+
 		if ($oLogger) {
 			$oLogger->Write(
-				'Forward Email Plugin: Hooked into login.success',
+				'Forward Email Plugin: Hooked into login.success and json.action-pre-call',
 				\LOG_INFO,
 				'PLUGIN'
 			);
@@ -69,6 +72,51 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 				->SetDescription('Automatically enable "save recipients to contacts" feature')
 				->SetDefaultValue(true)
 		];
+	}
+
+	/**
+	 * Called before JSON actions to log CardDAV test attempts
+	 */
+	public function OnJsonActionPreCall(string $sAction)
+	{
+		if ($sAction === 'TestContactsSyncData') {
+			$oActions = $this->Manager()->Actions();
+			$oLogger = $oActions->Logger();
+
+			if ($oLogger) {
+				$oLogger->Write(
+					'Forward Email Plugin: TestContactsSyncData called',
+					\LOG_INFO,
+					'PLUGIN'
+				);
+
+				// Log what's stored
+				try {
+					$oAccount = $oActions->getAccountFromToken();
+					$aStoredData = $this->getContactsSyncData($oAccount);
+
+					if ($aStoredData) {
+						$oLogger->Write(
+							'Forward Email Plugin: Stored CardDAV data - User: ' . ($aStoredData['User'] ?? 'N/A') . ', URL: ' . ($aStoredData['Url'] ?? 'N/A') . ', Has Password: ' . (isset($aStoredData['Password']) ? 'YES (encrypted JSON)' : 'NO') . ', Has HMAC: ' . (isset($aStoredData['PasswordHMAC']) ? 'YES' : 'NO'),
+							\LOG_INFO,
+							'PLUGIN'
+						);
+					} else {
+						$oLogger->Write(
+							'Forward Email Plugin: No stored CardDAV data found',
+							\LOG_WARNING,
+							'PLUGIN'
+						);
+					}
+				} catch (\Throwable $e) {
+					$oLogger->Write(
+						'Forward Email Plugin: Error retrieving stored data - ' . $e->getMessage(),
+						\LOG_WARNING,
+						'PLUGIN'
+					);
+				}
+			}
+		}
 	}
 
 	/**
@@ -261,19 +309,47 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 	{
 		$oActions = $this->Manager()->Actions();
 		$oMainAccount = $oActions->getMainAccountFromToken();
+		$oLogger = $oActions->Logger();
+
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: setContactsSyncData - User: ' . ($aData['User'] ?? 'N/A') . ', URL: ' . ($aData['Url'] ?? 'N/A') . ', Password length (plain): ' . (isset($aData['Password']) ? \strlen($aData['Password']) : 0) . ', CryptKey length: ' . \strlen($oMainAccount->CryptKey()),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
 
 		// Encrypt password
 		if (!empty($aData['Password'])) {
+			$sPlainPassword = $aData['Password'];
 			$aData['Password'] = \SnappyMail\Crypt::EncryptToJSON($aData['Password'], $oMainAccount->CryptKey());
 			$aData['PasswordHMAC'] = \hash_hmac('sha1', $aData['Password'], $oMainAccount->CryptKey());
+
+			if ($oLogger) {
+				$oLogger->Write(
+					'Forward Email Plugin: Password encrypted - HMAC: ' . \substr($aData['PasswordHMAC'], 0, 10) . '..., Encrypted length: ' . \strlen($aData['Password']),
+					\LOG_INFO,
+					'PLUGIN'
+				);
+			}
 		}
 
-		return $oActions->StorageProvider()->Put(
+		$bResult = $oActions->StorageProvider()->Put(
 			$oAccount,
 			\RainLoop\Providers\Storage\Enumerations\StorageType::CONFIG,
 			'contacts_sync',
 			\json_encode($aData)
 		);
+
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: Storage PUT ' . ($bResult ? 'SUCCEEDED' : 'FAILED'),
+				$bResult ? \LOG_INFO : \LOG_WARNING,
+				'PLUGIN'
+			);
+		}
+
+		return $bResult;
 	}
 
 	/**
