@@ -196,6 +196,7 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 			$this->ensureSecurityDefaults($oAccount);
 			$this->ensureCheckMailInterval($oAccount);
+			$this->ensureNotificationDefaults($oAccount);
 		} catch (\Throwable $oException) {
 			// Log error but don't fail login
 			if ($oLogger) {
@@ -497,6 +498,44 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			if ($oActions && $oActions->Logger()) {
 				$oActions->Logger()->Write(
 					'Forward Email Plugin: ensureCheckMailInterval error - ' . $oException->getMessage(),
+					\LOG_WARNING,
+					'PLUGIN'
+				);
+			}
+		}
+	}
+
+	/**
+	 * Ensure the SnappyMail SoundNotification toggle starts disabled so users opt-in
+	 */
+	private function ensureNotificationDefaults(\RainLoop\Model\Account $oAccount) : void
+	{
+		try {
+			$oActions = $this->Manager()->Actions();
+			$oSettings = $oActions->SettingsProvider()->Load($oAccount);
+			if (!$oSettings) {
+				return;
+			}
+
+			$mCurrentSound = $oSettings->GetConf('SoundNotification', null);
+			if ($mCurrentSound === null) {
+				$oSettings->SetConf('SoundNotification', false);
+				$bSaved = $oSettings->save();
+
+				$oLogger = $oActions->Logger();
+				if ($oLogger) {
+					$oLogger->Write(
+						'Forward Email Plugin: Initialized SoundNotification to Off for ' . $oAccount->Email() . ' (' . ($bSaved ? 'saved' : 'failed to save') . ')',
+						$bSaved ? \LOG_INFO : \LOG_WARNING,
+						'PLUGIN'
+					);
+				}
+			}
+		} catch (\Throwable $oException) {
+			$oActions = $this->Manager()->Actions();
+			if ($oActions && $oActions->Logger()) {
+				$oActions->Logger()->Write(
+					'Forward Email Plugin: ensureNotificationDefaults error - ' . $oException->getMessage(),
 					\LOG_WARNING,
 					'PLUGIN'
 				);
