@@ -207,6 +207,14 @@ class ForwardemailPlugin extends \RainLoop\Plugins\AbstractPlugin
 			'Url' => $sCardDAVUrl
 		];
 
+		if ($oLogger) {
+			$oLogger->Write(
+				'Forward Email Plugin: CardDAV data prepared - User: ' . $sEmail . ', URL: ' . $sCardDAVUrl . ', Password length: ' . \strlen($sPassword),
+				\LOG_INFO,
+				'PLUGIN'
+			);
+		}
+
 		// Save CardDAV configuration
 		$bResult = $this->setContactsSyncData($oAccount, $aData);
 
