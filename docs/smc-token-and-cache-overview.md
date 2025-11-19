@@ -28,6 +28,88 @@
 - Template bootstrapping, language packs, and compiled CSS/JS use that cache when `cache.system_data` stays On; the HTTP layer combines `cache.enable`, `cache.http`, and `cache.index` to decide whether to emit ETag/Expires headers (`mail/snappymail/v/0.0.0/app/libraries/RainLoop/Service.php:186`, `mail/snappymail/v/0.0.0/app/libraries/RainLoop/ServiceActions.php:396`, `mail/snappymail/v/0.0.0/app/libraries/RainLoop/Actions.php:885`).
 - Message-list operations wire the same cache client into the IMAP layer when `cache.server_uids` is enabled, improving search/threading performance while remaining configurable per deployment (`mail/snappymail/v/0.0.0/app/libraries/RainLoop/Actions/Messages.php:88`).
 
+### Cache Index Settings
+
+The `[cache]` section in `application.ini` uses two index keys to manage cache invalidation:
+
+- **`index`** - Main application cache key. Controls caching of:
+  - Compiled HTML templates
+  - Language/translation files
+  - Configuration data
+  - Plugin metadata
+  - Static asset references
+
+- **`fast_cache_index`** - Fast-access cache key. Controls caching of:
+  - Session data
+  - User preferences
+  - IMAP folder lists
+  - Message UID mappings for search/threading
+
+Changing these values (e.g., `v1` → `v2`) forces SnappyMail to treat all existing cached data as stale and rebuild from source files.
+
+### Clearing the Cache
+
+After deploying changes to templates, CSS, JS, or configuration, you may need to clear the cache for changes to take effect:
+
+```bash
+# 1. Clear SnappyMail's file cache
+rm -rf /dev/shm/snappymail-cache/*
+
+# 2. Restart PHP-FPM to clear OPcache
+sudo systemctl restart php8.2-fpm
+```
+
+Alternatively, force a complete cache rebuild by bumping the index values in `/var/www/snappymail/dist/data/_data_/_default_/configs/application.ini`:
+
+```ini
+[cache]
+index = "v2"           ; was "v1"
+fast_cache_index = "v2" ; was "v1"
+```
+
+### Browser Cache
+
+The `http_expires` setting (default: 3600 seconds) controls browser-level caching. Users may need to:
+- Hard refresh (Cmd+Shift+R / Ctrl+Shift+R)
+- Clear browser cache
+- Use incognito/private window to bypass cached assets
+
+## User Data Storage
+
+SnappyMail stores user data in multiple locations. Understanding these is important to avoid accidental data loss.
+
+### Browser localStorage (Client-side)
+
+Stored in the user's browser and will be lost if they clear site data:
+
+**PGP Keys:**
+- `openpgp-public-keys` - JSON array of armored public keys
+- `openpgp-private-keys` - JSON array of armored private keys
+
+**Authentication:**
+- `smctoken` - Device encryption token used to derive encryption keys for cookies
+
+**Client Settings:**
+- `rlcsc` - Client-side storage index containing UI preferences
+
+### Server-side Storage
+
+**Application cache** (safe to clear after deployments):
+- `/dev/shm/snappymail-cache/` - Compiled templates, language files, asset references
+
+**User data** (do NOT clear - contains persistent user settings):
+- `/var/www/snappymail/dist/data/_data_/_default_/storage/` - Per-user settings, contacts, filters
+
+### Important Distinction
+
+| Location | Contents | Safe to Clear? |
+|----------|----------|----------------|
+| `/dev/shm/snappymail-cache/` | Application cache | Yes - rebuilds automatically |
+| Browser localStorage | PGP keys, smctoken | No - loses user PGP keys |
+| Server `/data/` directory | User settings, contacts | No - loses user data |
+
+The ansible deployment clears `/dev/shm/snappymail-cache/` which is safe and won't affect user PGP keys or settings stored in browser localStorage or server-side storage.
+
 ## Additional Notes
 - All cookies except `smctoken` are HttpOnly and respect the configured SameSite/secure flags inherited through `SnappyMail\Cookies::set`; `smctoken` is intentionally script-visible to make the encryption key recoverable on the client (`mail/snappymail/v/0.0.0/app/libraries/snappymail/crypt.php:53`, `mail/snappymail/v/0.0.0/app/libraries/snappymail/Cookies.php:102`).
 - Changing `APP_VERSION` automatically hardens `smctoken`-derived secrets because the passphrase concatenates the version string, forcing re-encryption after upgrades (`mail/snappymail/v/0.0.0/app/libraries/snappymail/crypt.php:56`).
