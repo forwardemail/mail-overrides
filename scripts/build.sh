@@ -41,18 +41,18 @@ if [ ! -e "mail/.git" ] && [ ! -d "mail/snappymail" ]; then
     exit 1
 fi
 
-# Check if SnappyMail is built in mail/
+# Always rebuild SnappyMail assets unless explicitly skipped
+if [ -n "$SKIP_SNAPPYMAIL_BUILD" ]; then
+    echo "→ SKIP_SNAPPYMAIL_BUILD set, not rebuilding SnappyMail assets"
+else
+    echo "→ Building SnappyMail assets (npm ci + npx gulp)..."
+    (cd mail && npm ci && npx gulp)
+    echo "  ✓ SnappyMail assets rebuilt"
+fi
+
+# Verify build artifacts exist after (re)build
 if [ ! -f "mail/snappymail/v/0.0.0/static/css/boot.min.css" ]; then
-    echo "ERROR: SnappyMail not built in mail/ submodule!"
-    echo ""
-    echo "SnappyMail needs to be built first. Run:"
-    echo ""
-    echo "  cd mail"
-    echo "  npm ci  # Use npm ci for locked dependencies"
-    echo "  npx gulp"
-    echo "  cd .."
-    echo ""
-    echo "Then run this build script again."
+    echo "ERROR: SnappyMail assets missing even after build!"
     exit 1
 fi
 
