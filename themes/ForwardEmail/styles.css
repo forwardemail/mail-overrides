@@ -2803,6 +2803,49 @@ html.rl-mobile #rl-app #V-AdminPane>.b-toolbar {
 /* #endregion */
 
 /*
+ * Dark Mode Email Content Fix
+ * Override inline color styles from email senders to ensure readability
+ */
+
+/* #region dark mode email content */
+
+@media (prefers-color-scheme: dark) {
+	/* Force readable colors on email content that has inline black text */
+	#rl-app #messageItem .b-text-part.html [style*="color: rgb(0, 0, 0)"],
+	#rl-app #messageItem .b-text-part.html [style*="color:rgb(0, 0, 0)"],
+	#rl-app #messageItem .b-text-part.html [style*="color: rgb(0,0,0)"],
+	#rl-app #messageItem .b-text-part.html [style*="color:rgb(0,0,0)"],
+	#rl-app #messageItem .b-text-part.html [style*="color: #000"],
+	#rl-app #messageItem .b-text-part.html [style*="color:#000"],
+	#rl-app #messageItem .b-text-part.html [style*="color: black"],
+	#rl-app #messageItem .b-text-part.html [style*="color:black"] {
+		color: var(--nc-color-main-text, #e8eaed) !important;
+	}
+
+	/* Also handle font tags with color attribute */
+	#rl-app #messageItem .b-text-part.html font[color="#000000"],
+	#rl-app #messageItem .b-text-part.html font[color="#000"],
+	#rl-app #messageItem .b-text-part.html font[color="black"] {
+		color: var(--nc-color-main-text, #e8eaed) !important;
+	}
+
+	/* Set default color for mail body content in dark mode */
+	#rl-app #messageItem .b-text-part.html .mail-body {
+		color: var(--nc-color-main-text, #e8eaed);
+	}
+
+	/* Override very dark grays that are nearly black */
+	#rl-app #messageItem .b-text-part.html [style*="color: rgb(32, 33, 36)"],
+	#rl-app #messageItem .b-text-part.html [style*="color:rgb(32, 33, 36)"],
+	#rl-app #messageItem .b-text-part.html [style*="color: rgb(34, 34, 34)"],
+	#rl-app #messageItem .b-text-part.html [style*="color:rgb(34, 34, 34)"] {
+		color: var(--nc-color-main-text, #e8eaed) !important;
+	}
+}
+
+/* #endregion */
+
+/*
  * Tablet Layout
  */
 
