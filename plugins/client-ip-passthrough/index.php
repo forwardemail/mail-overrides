@@ -234,14 +234,14 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 
 		try {
 			// Build ID parameters array per RFC 2971
-			// Format: ID ("name" "SnappyMail" "version" "2.x" "client-ip" "192.168.1.100")
+			// Format: ID ("name" "SnappyMail" "version" "2.x" "address" "192.168.1.100")
 			// Each parameter must be escaped as a quoted string
 			$idParams = [
 				$oImapClient->EscapeString('name'),
 				$oImapClient->EscapeString('SnappyMail'),
 				$oImapClient->EscapeString('version'),
 				$oImapClient->EscapeString(defined('APP_VERSION') ? APP_VERSION : '2.x'),
-				$oImapClient->EscapeString('client-ip'),
+				$oImapClient->EscapeString('address'),
 				$oImapClient->EscapeString($clientIp)
 			];
 
@@ -254,7 +254,7 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 			// Log the ID command if logging is enabled
 			if ($this->Manager()->Actions()->Logger()) {
 				$this->Manager()->Actions()->Logger()->Write(
-					'Client IP Passthrough: IMAP ID sent with client-ip=' . $clientIp . ' for ' . $oAccount->Email(),
+					'Client IP Passthrough: IMAP ID sent with address=' . $clientIp . ' for ' . $oAccount->Email(),
 					\LOG_INFO,
 					'PLUGIN'
 				);
