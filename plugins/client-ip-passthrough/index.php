@@ -36,8 +36,9 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 		// Hook into SMTP connection to modify EHLO message
 		$this->addHook('smtp.before-connect', 'ModifySmtpEhlo');
 
-		// Hook into IMAP after-login to send ID command
-		$this->addHook('imap.after-login', 'SendImapIdCommand');
+		// Hook into IMAP before-login to send ID command
+		// This allows the server to see the client IP before authentication for rate limiting
+		$this->addHook('imap.before-login', 'SendImapIdCommand');
 	}
 
 	/**
@@ -202,20 +203,20 @@ class ClientIpPassthroughPlugin extends \RainLoop\Plugins\AbstractPlugin
 	}
 
 	/**
-	 * Hook: Send IMAP ID command with client IP after login
+	 * Hook: Send IMAP ID command with client IP before login
+	 * This allows the server to see the real client IP before authentication,
+	 * enabling proper rate limiting at connection time.
 	 *
 	 * @param \RainLoop\Model\Account $oAccount
 	 * @param \MailSo\Imap\ImapClient $oImapClient
-	 * @param bool $bLoginResult
 	 * @param \MailSo\Imap\Settings $oSettings
 	 */
 	public function SendImapIdCommand(\RainLoop\Model\Account $oAccount,
 		\MailSo\Imap\ImapClient $oImapClient,
-		bool $bLoginResult,
 		\MailSo\Imap\Settings $oSettings) : void
 	{
-		// Only proceed if IMAP passthrough is enabled and login was successful
-		if (!$this->Config()->Get('plugin', 'enable_imap', true) || !$bLoginResult) {
+		// Only proceed if IMAP passthrough is enabled
+		if (!$this->Config()->Get('plugin', 'enable_imap', true)) {
 			return;
 		}
 
